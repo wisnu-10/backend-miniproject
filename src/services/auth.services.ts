@@ -28,15 +28,15 @@ export const register = async (data: {
   }
 
   // Validate referral code if provided
-  let referredByUserId: string | null = null;
+  let referrer: { id: string } | null = null;
   if (referral_code) {
-    const referrer = await prisma.user.findUnique({
+    referrer = await prisma.user.findUnique({
       where: { referral_code },
+      select: { id: true },
     });
     if (!referrer) {
       throw new Error("Invalid referral code");
     }
-    referredByUserId = referrer.id;
   }
 
   // Hash password
@@ -56,17 +56,51 @@ export const register = async (data: {
     }
   }
 
-  // Create user
-  const newUser = await prisma.user.create({
-    data: {
-      email,
-      password: hashedPassword,
-      full_name,
-      phone_number,
-      role,
-      referral_code: newReferralCode,
-      referred_by: referredByUserId,
-    },
+  // Calculate 3 months from now for expiration
+  const threeMonthsFromNow = new Date();
+  threeMonthsFromNow.setMonth(threeMonthsFromNow.getMonth() + 3);
+
+  // Create user with referral rewards in a transaction
+  const newUser = await prisma.$transaction(async (tx) => {
+    // Create user
+    const user = await tx.user.create({
+      data: {
+        email,
+        password: hashedPassword,
+        full_name,
+        phone_number,
+        role,
+        referral_code: newReferralCode,
+        referred_by: referrer?.id || null,
+      },
+    });
+
+    // If user registered with a referral code, create rewards
+    if (referrer) {
+      // Create 10% discount coupon for new user (valid for 3 months)
+      const couponCode = `REF-${generateReferralCode()}`;
+      await tx.coupon.create({
+        data: {
+          user_id: user.id,
+          code: couponCode,
+          discount_percentage: 10, // 10% discount
+          valid_from: new Date(),
+          valid_until: threeMonthsFromNow,
+        },
+      });
+
+      // Add 10,000 points to referrer (expires in 3 months)
+      await tx.point.create({
+        data: {
+          user_id: referrer.id,
+          amount: 10000,
+          remaining_amount: 10000,
+          expires_at: threeMonthsFromNow,
+        },
+      });
+    }
+
+    return user;
   });
 
   return newUser;
