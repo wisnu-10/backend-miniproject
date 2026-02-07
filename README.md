@@ -10,6 +10,8 @@ This is the backend service for the Mini Project V2 application, built with Node
 - **Database**: PostgreSQL
 - **ORM**: Prisma
 - **Authentication**: JWT & Cookies (HttpOnly)
+- **File Upload**: Multer + Cloudinary
+- **Email**: Nodemailer
 - **Validation**: Zod (planned/in-progress) or Manual
 
 ## 🚀 Getting Started
@@ -48,6 +50,16 @@ This is the backend service for the Mini Project V2 application, built with Node
 
     # Security
     JWT_SECRET="your_super_secret_key_change_this"
+
+    # Cloudinary (for profile picture upload)
+    CLOUDINARY_URL="cloudinary://API_KEY:API_SECRET@CLOUD_NAME"
+
+    # Email (for password reset)
+    SMTP_HOST="smtp.gmail.com"
+    SMTP_PORT=587
+    SMTP_USER="your_email@gmail.com"
+    SMTP_PASS="your_app_password"
+    FRONTEND_URL="http://localhost:3000"
     ```
 
 4.  **Database Migration**:
@@ -147,6 +159,43 @@ Destroy the session.
   }
   ```
 
+#### 4. Forgot Password
+
+Request a password reset email.
+
+- **Endpoint**: `POST /api/auth/forgot-password`
+- **Body**:
+  ```json
+  {
+    "email": "user@example.com"
+  }
+  ```
+- **Response (200)**:
+  ```json
+  {
+    "message": "If the email exists, a reset link has been sent"
+  }
+  ```
+
+#### 5. Reset Password
+
+Reset password using the token from email.
+
+- **Endpoint**: `POST /api/auth/reset-password`
+- **Body**:
+  ```json
+  {
+    "token": "reset-token-from-email",
+    "new_password": "newsecurepassword"
+  }
+  ```
+- **Response (200)**:
+  ```json
+  {
+    "message": "Password reset successfully"
+  }
+  ```
+
 ### Features
 
 - **Role-Based Access Control**:
@@ -155,6 +204,193 @@ Destroy the session.
 - **Referral System**:
   - Every new user gets a unique 8-character referral code.
   - Users can register with a referrer's code.
+  - **Referral Rewards**:
+    - New user with referral gets a **10% discount coupon** (valid 3 months).
+    - Referrer gets **10,000 points** (expires in 3 months).
+
+---
+
+### Points (`/api/users/me/points`)
+
+All endpoints require authentication.
+
+#### 1. Get Points Balance
+
+- **Endpoint**: `GET /api/users/me/points`
+- **Headers**: `Authorization: Bearer <token>` or Cookie
+- **Response (200)**:
+  ```json
+  {
+    "total_balance": 30000,
+    "points": [
+      {
+        "id": "...",
+        "amount": 10000,
+        "remaining_amount": 10000,
+        "expires_at": "2026-05-07T04:38:00Z",
+        "created_at": "2026-02-07T04:38:00Z"
+      }
+    ]
+  }
+  ```
+
+#### 2. Get Points History
+
+- **Endpoint**: `GET /api/users/me/points/history`
+- **Headers**: `Authorization: Bearer <token>` or Cookie
+- **Response (200)**:
+  ```json
+  {
+    "history": [
+      {
+        "id": "...",
+        "amount": 10000,
+        "remaining_amount": 5000,
+        "expires_at": "2026-05-07T04:38:00Z",
+        "created_at": "2026-02-07T04:38:00Z",
+        "is_expired": false
+      }
+    ]
+  }
+  ```
+
+---
+
+### Coupons (`/api/users/me/coupons`)
+
+All endpoints require authentication.
+
+#### 1. Get My Coupons
+
+- **Endpoint**: `GET /api/users/me/coupons`
+- **Headers**: `Authorization: Bearer <token>` or Cookie
+- **Response (200)**:
+  ```json
+  {
+    "coupons": [
+      {
+        "id": "...",
+        "code": "REF-ABC12345",
+        "discount_percentage": 10,
+        "discount_amount": null,
+        "valid_from": "2026-02-07T04:38:00Z",
+        "valid_until": "2026-05-07T04:38:00Z",
+        "is_used": false,
+        "is_expired": false,
+        "is_valid": true,
+        "created_at": "2026-02-07T04:38:00Z"
+      }
+    ]
+  }
+  ```
+
+#### 2. Validate Coupon
+
+- **Endpoint**: `GET /api/users/me/coupons/validate/:code`
+- **Headers**: `Authorization: Bearer <token>` or Cookie
+- **Response (200)** - Valid:
+  ```json
+  {
+    "valid": true,
+    "coupon": {
+      "id": "...",
+      "code": "REF-ABC12345",
+      "discount_percentage": 10,
+      "discount_amount": null,
+      "valid_until": "2026-05-07T04:38:00Z"
+    }
+  }
+  ```
+- **Response (400)** - Invalid:
+  ```json
+  {
+    "valid": false,
+    "message": "Coupon has expired"
+  }
+  ```
+
+---
+
+### Profile (`/api/users/me/profile`)
+
+All endpoints require authentication.
+
+#### 1. Get Profile
+
+- **Endpoint**: `GET /api/users/me/profile`
+- **Headers**: `Authorization: Bearer <token>` or Cookie
+- **Response (200)**:
+  ```json
+  {
+    "profile": {
+      "id": "...",
+      "email": "user@example.com",
+      "full_name": "John Doe",
+      "phone_number": "08123456789",
+      "profile_picture": "https://res.cloudinary.com/...",
+      "role": "CUSTOMER",
+      "referral_code": "ABC12345",
+      "created_at": "2026-02-07T04:38:00Z",
+      "updated_at": "2026-02-07T04:38:00Z"
+    }
+  }
+  ```
+
+#### 2. Update Profile
+
+- **Endpoint**: `PUT /api/users/me/profile`
+- **Headers**: `Authorization: Bearer <token>` or Cookie
+- **Body**:
+  ```json
+  {
+    "full_name": "John Updated",
+    "phone_number": "08987654321"
+  }
+  ```
+- **Response (200)**:
+  ```json
+  {
+    "message": "Profile updated successfully",
+    "profile": { ... }
+  }
+  ```
+
+#### 3. Update Profile Picture
+
+Upload image using `multipart/form-data`.
+
+- **Endpoint**: `PUT /api/users/me/profile/picture`
+- **Headers**: `Authorization: Bearer <token>` or Cookie
+- **Body**: `multipart/form-data` with field `profile_picture` (image file)
+- **Limits**: Max 5MB, JPEG/PNG/GIF/WebP only
+- **Response (200)**:
+  ```json
+  {
+    "message": "Profile picture updated successfully",
+    "profile": {
+      "id": "...",
+      "profile_picture": "https://res.cloudinary.com/..."
+    }
+  }
+  ```
+
+#### 4. Change Password
+
+- **Endpoint**: `PUT /api/users/me/profile/password`
+- **Headers**: `Authorization: Bearer <token>` or Cookie
+- **Body**:
+  ```json
+  {
+    "old_password": "currentpassword",
+    "new_password": "newsecurepassword"
+  }
+  ```
+- **Response (200)**:
+  ```json
+  {
+    "message": "Password changed successfully"
+  }
+  ```
 
 ---
 
@@ -244,7 +480,12 @@ Browse upcoming events with search, filters, sorting, and pagination.
     "image": "https://example.com/image.jpg",
     "ticket_types": [
       { "name": "Regular", "price": 150000, "quantity": 800 },
-      { "name": "VIP", "price": 500000, "quantity": 200, "description": "Front row access" }
+      {
+        "name": "VIP",
+        "price": 500000,
+        "quantity": 200,
+        "description": "Front row access"
+      }
     ]
   }
   ```
@@ -411,6 +652,7 @@ Cannot delete if tickets have been sold.
 - **Endpoint**: `POST /api/events/:eventId/promotions`
 - **Headers**: `Authorization: Bearer <token>` or Cookie
 - **Body**:
+
   ```json
   {
     "code": "EARLYBIRD20",
@@ -420,6 +662,7 @@ Cannot delete if tickets have been sold.
     "valid_until": "2026-02-28T23:59:59Z"
   }
   ```
+
   > Note: Provide either `discount_percentage` (0-100) OR `discount_amount`. If `code` is omitted, it will be auto-generated.
 
 - **Response (201)**:
@@ -501,9 +744,9 @@ All endpoints return errors in this format:
 ```
 
 Common HTTP status codes:
+
 - `400` - Bad Request (validation error, invalid input)
 - `401` - Unauthorized (missing or invalid token)
 - `403` - Forbidden (insufficient permissions)
 - `404` - Not Found (resource doesn't exist)
 - `500` - Internal Server Error
-
