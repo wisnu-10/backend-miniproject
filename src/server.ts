@@ -8,6 +8,8 @@ import promotionRoutes from "./routes/promotion.routes";
 import pointRoutes from "./routes/point.routes";
 import couponRoutes from "./routes/coupon.routes";
 import profileRoutes from "./routes/profile.routes";
+import transactionRoutes from "./routes/transaction.routes";
+import { startScheduler } from "./services/scheduler.service";
 import "dotenv/config";
 
 const app = express();
@@ -26,11 +28,14 @@ app.use(cookieParser());
 app.use("/api/auth", authRoutes);
 app.use("/api/events", eventRoutes);
 app.use("/api/events", ticketTypeRoutes);
-app.use("/api/promotions", promotionRoutes);
+app.use("/api", promotionRoutes);
 app.use("/api/users/me/points", pointRoutes);
 app.use("/api/users/me/coupons", couponRoutes);
 app.use("/api/users/me/profile", profileRoutes);
+app.use("/api/transactions", transactionRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
+  // Start the transaction scheduler for automatic status updates
+  startScheduler();
 });
