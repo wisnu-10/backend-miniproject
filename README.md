@@ -733,6 +733,182 @@ Cannot delete if promotion has been used.
 
 ---
 
+### Transactions (`/api/transactions`)
+
+#### Transaction Statuses
+
+| Status | Description |
+|--------|-------------|
+| `WAITING_PAYMENT` | Transaction created, awaiting payment proof (2-hour deadline) |
+| `WAITING_CONFIRMATION` | Payment proof uploaded, awaiting organizer review |
+| `DONE` | Transaction completed successfully |
+| `REJECTED` | Rejected by organizer |
+| `EXPIRED` | No payment proof uploaded within 2 hours |
+| `CANCELLED` | Cancelled by user or auto-cancelled after 3 days without organizer action |
+
+#### 1. Create Transaction (CUSTOMER only)
+
+Purchase event tickets with optional discounts.
+
+- **Endpoint**: `POST /api/transactions`
+- **Headers**: `Authorization: Bearer <token>` or Cookie
+- **Body**:
+  ```json
+  {
+    "event_id": "event-uuid",
+    "items": [
+      { "ticket_type_id": "ticket-uuid", "quantity": 2 }
+    ],
+    "promotion_code": "EARLYBIRD20",
+    "coupon_code": "REF-ABC123",
+    "points_to_use": 10000
+  }
+  ```
+  > All prices are in **IDR**. Points reduce the final amount (1 point = 1 IDR).
+
+- **Response (201)**:
+  ```json
+  {
+    "message": "Transaction created successfully",
+    "data": {
+      "id": "...",
+      "invoice_number": "INV-20260207-ABC123",
+      "total_amount": 300000,
+      "discount_amount": 60000,
+      "points_used": 10000,
+      "final_amount": 230000,
+      "status": "WAITING_PAYMENT",
+      "payment_deadline": "2026-02-07T17:00:00Z",
+      "time_remaining_seconds": 7200,
+      "items": [...],
+      "event": {...}
+    }
+  }
+  ```
+
+#### 2. Upload Payment Proof (CUSTOMER only)
+
+Upload proof after payment. Must be done within 2 hours.
+
+- **Endpoint**: `POST /api/transactions/:id/payment-proof`
+- **Headers**: `Authorization: Bearer <token>` or Cookie
+- **Body**:
+  ```json
+  {
+    "payment_proof": "https://cloudinary.com/proof.jpg"
+  }
+  ```
+- **Response (200)**:
+  ```json
+  {
+    "message": "Payment proof uploaded successfully",
+    "data": {
+      "id": "...",
+      "status": "WAITING_CONFIRMATION",
+      "payment_proof": "https://cloudinary.com/proof.jpg"
+    }
+  }
+  ```
+
+#### 3. Cancel Transaction (CUSTOMER only)
+
+Cancel a transaction before payment proof is uploaded.
+
+- **Endpoint**: `POST /api/transactions/:id/cancel`
+- **Headers**: `Authorization: Bearer <token>` or Cookie
+- **Response (200)**:
+  ```json
+  {
+    "message": "Transaction cancelled successfully",
+    "data": { "id": "...", "status": "CANCELLED" }
+  }
+  ```
+  > Points, coupons, and seats are automatically restored.
+
+#### 4. Get My Transactions (CUSTOMER only)
+
+- **Endpoint**: `GET /api/transactions/me`
+- **Headers**: `Authorization: Bearer <token>` or Cookie
+- **Query Parameters**: `page`, `limit`, `status`, `date_from`, `date_to`
+- **Response (200)**:
+  ```json
+  {
+    "data": [...],
+    "pagination": { "page": 1, "limit": 10, "total": 25, "total_pages": 3 }
+  }
+  ```
+
+#### 5. Get Transaction Details (CUSTOMER/ORGANIZER)
+
+- **Endpoint**: `GET /api/transactions/:id`
+- **Headers**: `Authorization: Bearer <token>` or Cookie
+- **Response (200)**:
+  ```json
+  {
+    "data": {
+      "id": "...",
+      "invoice_number": "INV-20260207-ABC123",
+      "status": "WAITING_PAYMENT",
+      "time_remaining_seconds": 3600,
+      "event": {...},
+      "items": [...],
+      "promotion": {...},
+      "coupon": {...}
+    }
+  }
+  ```
+
+#### 6. Get Organizer Transactions (ORGANIZER only)
+
+List transactions for events you organize.
+
+- **Endpoint**: `GET /api/transactions/organizer/list`
+- **Headers**: `Authorization: Bearer <token>` or Cookie
+- **Query Parameters**: `page`, `limit`, `event_id`, `status`, `date_from`, `date_to`
+- **Response (200)**:
+  ```json
+  {
+    "data": [...],
+    "pagination": { "page": 1, "limit": 10, "total": 50, "total_pages": 5 }
+  }
+  ```
+
+#### 7. Accept/Reject Transaction (ORGANIZER only)
+
+- **Endpoint**: `PUT /api/transactions/:id/status`
+- **Headers**: `Authorization: Bearer <token>` or Cookie
+- **Body**:
+  ```json
+  {
+    "status": "DONE",
+    "rejection_reason": "Optional reason if rejecting"
+  }
+  ```
+  > Status must be `DONE` or `REJECTED`.
+
+- **Response (200)**:
+  ```json
+  {
+    "message": "Transaction accepted successfully",
+    "data": { "id": "...", "status": "DONE" }
+  }
+  ```
+  > If rejected, points, coupons, and seats are automatically restored.
+
+#### Automatic Status Changes
+
+The backend runs a scheduler that:
+- **Expires** transactions after 2 hours if no payment proof is uploaded
+- **Cancels** transactions after 3 days if organizer doesn't accept/reject
+
+Both cases trigger automatic **rollback** of:
+- Ticket seat availability
+- User points (refunded with 3-month expiry)
+- Coupon usage status
+- Promotion usage count
+
+---
+
 ### Error Responses
 
 All endpoints return errors in this format:
