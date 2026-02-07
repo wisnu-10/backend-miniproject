@@ -5,6 +5,9 @@ import authRoutes from "./routes/auth.routes";
 import eventRoutes from "./routes/event.routes";
 import ticketTypeRoutes from "./routes/ticket-type.routes";
 import promotionRoutes from "./routes/promotion.routes";
+import pointRoutes from "./routes/point.routes";
+import couponRoutes from "./routes/coupon.routes";
+import profileRoutes from "./routes/profile.routes";
 import "dotenv/config";
 
 const app = express();
@@ -23,7 +26,10 @@ app.use(cookieParser());
 app.use("/api/auth", authRoutes);
 app.use("/api/events", eventRoutes);
 app.use("/api/events", ticketTypeRoutes);
-app.use("/api", promotionRoutes);
+app.use("/api/promotions", promotionRoutes);
+app.use("/api/users/me/points", pointRoutes);
+app.use("/api/users/me/coupons", couponRoutes);
+app.use("/api/users/me/profile", profileRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
