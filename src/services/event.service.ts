@@ -1,5 +1,5 @@
 import prisma from "../config/prisma-client.config";
-import { Prisma } from "../generated/prisma/client";
+import { Prisma, TransactionStatus } from "../generated/prisma/client";
 
 // Types for service inputs
 export interface CreateEventInput {
@@ -100,7 +100,7 @@ export const createEvent = async (data: CreateEventInput) => {
 export const updateEvent = async (
   eventId: string,
   organizerId: string,
-  data: UpdateEventInput
+  data: UpdateEventInput,
 ) => {
   // Verify ownership
   const existingEvent = await prisma.event.findFirst({
@@ -118,7 +118,7 @@ export const updateEvent = async (
   // Update is_free if base_price is updated
   const is_free =
     data.base_price !== undefined
-      ? data.is_free ?? data.base_price === 0
+      ? (data.is_free ?? data.base_price === 0)
       : data.is_free;
 
   // Calculate available_seats if total_seats changes
@@ -185,9 +185,14 @@ export const deleteEvent = async (eventId: string, organizerId: string) => {
 // Get events with filters, search, sorting, and pagination
 export const getEvents = async (
   filters: EventFilters,
-  pagination: PaginationOptions
+  pagination: PaginationOptions,
 ) => {
-  const { page, limit, sort_by = "start_date", sort_order = "asc" } = pagination;
+  const {
+    page,
+    limit,
+    sort_by = "start_date",
+    sort_order = "asc",
+  } = pagination;
   const skip = (page - 1) * limit;
 
   // Build where clause
@@ -357,9 +362,14 @@ export const getEventById = async (eventId: string) => {
 // Get events by organizer
 export const getEventsByOrganizer = async (
   organizerId: string,
-  pagination: PaginationOptions
+  pagination: PaginationOptions,
 ) => {
-  const { page, limit, sort_by = "created_at", sort_order = "desc" } = pagination;
+  const {
+    page,
+    limit,
+    sort_by = "created_at",
+    sort_order = "desc",
+  } = pagination;
   const skip = (page - 1) * limit;
 
   const where: Prisma.EventWhereInput = {
@@ -425,4 +435,104 @@ export const getLocations = async () => {
   });
 
   return locations;
+};
+
+// Get list of attendees for an event (ORGANIZER only)
+export const getEventAttendees = async (
+  eventId: string,
+  organizerId: string,
+  pagination: { page: number; limit: number } = { page: 1, limit: 20 },
+) => {
+  const { page, limit } = pagination;
+  const skip = (page - 1) * limit;
+
+  // Verify event ownership
+  const event = await prisma.event.findFirst({
+    where: {
+      id: eventId,
+      organizer_id: organizerId,
+      deleted_at: null,
+    },
+  });
+
+  if (!event) {
+    throw new Error(
+      "Event not found or you don't have permission to view attendees",
+    );
+  }
+
+  // Get completed transactions for this event
+  const where = {
+    event_id: eventId,
+    status: TransactionStatus.DONE,
+  };
+
+  const [transactions, total] = await Promise.all([
+    prisma.transaction.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: { created_at: "desc" },
+      include: {
+        user: {
+          select: {
+            id: true,
+            full_name: true,
+            email: true,
+          },
+        },
+        items: {
+          include: {
+            ticket_type: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    }),
+    prisma.transaction.count({ where }),
+  ]);
+
+  // Transform data to attendee format
+  const attendees = transactions.map((t) => {
+    const totalTickets = t.items.reduce((sum, item) => sum + item.quantity, 0);
+    const ticketTypes = t.items.map((item) => ({
+      type: item.ticket_type.name,
+      quantity: item.quantity,
+      price_per_ticket: Number(item.price_at_buy),
+      subtotal: Number(item.subtotal),
+    }));
+
+    return {
+      id: t.id,
+      invoice_number: t.invoice_number,
+      attendee: {
+        id: t.user.id,
+        name: t.user.full_name,
+        email: t.user.email,
+      },
+      tickets: ticketTypes,
+      total_tickets: totalTickets,
+      total_paid: Number(t.final_amount),
+      purchased_at: t.created_at,
+    };
+  });
+
+  return {
+    data: attendees,
+    event: {
+      id: event.id,
+      name: event.name,
+      start_date: event.start_date,
+    },
+    pagination: {
+      page,
+      limit,
+      total,
+      total_pages: Math.ceil(total / limit),
+    },
+  };
 };

@@ -737,14 +737,14 @@ Cannot delete if promotion has been used.
 
 #### Transaction Statuses
 
-| Status | Description |
-|--------|-------------|
-| `WAITING_PAYMENT` | Transaction created, awaiting payment proof (2-hour deadline) |
-| `WAITING_CONFIRMATION` | Payment proof uploaded, awaiting organizer review |
-| `DONE` | Transaction completed successfully |
-| `REJECTED` | Rejected by organizer |
-| `EXPIRED` | No payment proof uploaded within 2 hours |
-| `CANCELLED` | Cancelled by user or auto-cancelled after 3 days without organizer action |
+| Status                 | Description                                                               |
+| ---------------------- | ------------------------------------------------------------------------- |
+| `WAITING_PAYMENT`      | Transaction created, awaiting payment proof (2-hour deadline)             |
+| `WAITING_CONFIRMATION` | Payment proof uploaded, awaiting organizer review                         |
+| `DONE`                 | Transaction completed successfully                                        |
+| `REJECTED`             | Rejected by organizer                                                     |
+| `EXPIRED`              | No payment proof uploaded within 2 hours                                  |
+| `CANCELLED`            | Cancelled by user or auto-cancelled after 3 days without organizer action |
 
 #### 1. Create Transaction (CUSTOMER only)
 
@@ -753,17 +753,17 @@ Purchase event tickets with optional discounts.
 - **Endpoint**: `POST /api/transactions`
 - **Headers**: `Authorization: Bearer <token>` or Cookie
 - **Body**:
+
   ```json
   {
     "event_id": "event-uuid",
-    "items": [
-      { "ticket_type_id": "ticket-uuid", "quantity": 2 }
-    ],
+    "items": [{ "ticket_type_id": "ticket-uuid", "quantity": 2 }],
     "promotion_code": "EARLYBIRD20",
     "coupon_code": "REF-ABC123",
     "points_to_use": 10000
   }
   ```
+
   > All prices are in **IDR**. Points reduce the final amount (1 point = 1 IDR).
 
 - **Response (201)**:
@@ -878,12 +878,14 @@ List transactions for events you organize.
 - **Endpoint**: `PUT /api/transactions/:id/status`
 - **Headers**: `Authorization: Bearer <token>` or Cookie
 - **Body**:
+
   ```json
   {
     "status": "DONE",
     "rejection_reason": "Optional reason if rejecting"
   }
   ```
+
   > Status must be `DONE` or `REJECTED`.
 
 - **Response (200)**:
@@ -898,14 +900,187 @@ List transactions for events you organize.
 #### Automatic Status Changes
 
 The backend runs a scheduler that:
+
 - **Expires** transactions after 2 hours if no payment proof is uploaded
 - **Cancels** transactions after 3 days if organizer doesn't accept/reject
 
 Both cases trigger automatic **rollback** of:
+
 - Ticket seat availability
 - User points (refunded with 3-month expiry)
 - Coupon usage status
 - Promotion usage count
+
+---
+
+### Dashboard (`/api/dashboard`)
+
+All dashboard endpoints require `ORGANIZER` role authentication.
+
+#### 1. Get Dashboard Overview
+
+Get summary statistics for the organizer.
+
+- **Endpoint**: `GET /api/dashboard/overview`
+- **Headers**: `Authorization: Bearer <token>` or Cookie
+- **Response (200)**:
+  ```json
+  {
+    "message": "Dashboard overview retrieved successfully",
+    "data": {
+      "total_events": 10,
+      "total_transactions": 150,
+      "total_revenue": 15000000,
+      "pending_confirmations": 5,
+      "upcoming_events": 3,
+      "completed_transactions": 140
+    }
+  }
+  ```
+
+#### 2. Get Event Statistics
+
+Get statistics by time period (grouped by year, month, or day).
+
+- **Endpoint**: `GET /api/dashboard/statistics`
+- **Headers**: `Authorization: Bearer <token>` or Cookie
+- **Query Parameters**:
+  | Parameter | Type | Description |
+  |-----------|------|-------------|
+  | `year` | number | Filter by year (e.g., 2026) |
+  | `month` | number | Filter by month (1-12), requires `year` |
+
+- **Response (200)**:
+  ```json
+  {
+    "message": "Statistics retrieved successfully",
+    "data": [
+      {
+        "period": "2026-02",
+        "total_transactions": 25,
+        "total_revenue": 3500000,
+        "total_tickets_sold": 50
+      }
+    ],
+    "filters": {
+      "year": 2026,
+      "month": null,
+      "grouping": "monthly"
+    }
+  }
+  ```
+
+#### 3. Get Revenue Report
+
+Get revenue breakdown by event.
+
+- **Endpoint**: `GET /api/dashboard/revenue`
+- **Headers**: `Authorization: Bearer <token>` or Cookie
+- **Query Parameters**:
+  | Parameter | Type | Description |
+  |-----------|------|-------------|
+  | `year` | number | Filter by year |
+  | `month` | number | Filter by month (1-12), requires `year` |
+  | `event_id` | string | Filter by specific event |
+
+- **Response (200)**:
+  ```json
+  {
+    "message": "Revenue report retrieved successfully",
+    "data": {
+      "by_event": [
+        {
+          "event_id": "...",
+          "event_name": "Music Festival 2026",
+          "total_revenue": 5000000,
+          "total_tickets_sold": 100,
+          "transaction_count": 50
+        }
+      ],
+      "total_revenue": 15000000,
+      "total_tickets_sold": 300,
+      "total_transactions": 150
+    }
+  }
+  ```
+
+---
+
+### Attendee List (`/api/events/:id/attendees`)
+
+#### Get Event Attendees (ORGANIZER only)
+
+Get the list of attendees for a specific event.
+
+- **Endpoint**: `GET /api/events/:id/attendees`
+- **Headers**: `Authorization: Bearer <token>` or Cookie
+- **Query Parameters**: `page`, `limit`
+- **Response (200)**:
+  ```json
+  {
+    "message": "Attendees retrieved successfully",
+    "data": [
+      {
+        "id": "transaction-id",
+        "invoice_number": "INV-20260207-ABC123",
+        "attendee": {
+          "id": "user-id",
+          "name": "John Doe",
+          "email": "john@example.com"
+        },
+        "tickets": [
+          {
+            "type": "VIP",
+            "quantity": 2,
+            "price_per_ticket": 500000,
+            "subtotal": 1000000
+          }
+        ],
+        "total_tickets": 2,
+        "total_paid": 1000000,
+        "purchased_at": "2026-02-07T10:30:00Z"
+      }
+    ],
+    "event": {
+      "id": "...",
+      "name": "Music Festival 2026",
+      "start_date": "2026-03-01T10:00:00Z"
+    },
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "total": 50,
+      "total_pages": 3
+    }
+  }
+  ```
+
+---
+
+### Email Notifications
+
+The system automatically sends email notifications to customers when:
+
+#### Transaction Accepted
+
+When organizer accepts a transaction (status → `DONE`):
+
+- Customer receives confirmation email with:
+  - Event name and date
+  - Ticket details (type, quantity, price)
+  - Total amount paid
+  - Instructions to present at event entrance
+
+#### Transaction Rejected
+
+When organizer rejects a transaction (status → `REJECTED`):
+
+- Customer receives rejection email with:
+  - Reason for rejection (if provided)
+  - Refund details:
+    - Points refunded (with 3-month expiry)
+    - Coupon restored (if used)
+    - Seats released back to availability
 
 ---
 

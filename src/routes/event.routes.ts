@@ -1,13 +1,14 @@
 import { Router } from "express";
 import {
-    createEvent,
-    updateEvent,
-    deleteEvent,
-    getEvents,
-    getEventById,
-    getMyEvents,
-    getCategories,
-    getLocations,
+  createEvent,
+  updateEvent,
+  deleteEvent,
+  getEvents,
+  getEventById,
+  getMyEvents,
+  getCategories,
+  getLocations,
+  getEventAttendees,
 } from "../controllers/event.controller";
 import { authenticate, authorize } from "../middleware/auth.middleware";
 
@@ -26,10 +27,18 @@ router.delete("/:id", authenticate, authorize(["ORGANIZER"]), deleteEvent);
 
 // Organizer dashboard route
 router.get(
-    "/organizer/my-events",
-    authenticate,
-    authorize(["ORGANIZER"]),
-    getMyEvents
+  "/organizer/my-events",
+  authenticate,
+  authorize(["ORGANIZER"]),
+  getMyEvents,
+);
+
+// Attendee list for an event (ORGANIZER only)
+router.get(
+  "/:id/attendees",
+  authenticate,
+  authorize(["ORGANIZER"]),
+  getEventAttendees,
 );
 
 export default router;
