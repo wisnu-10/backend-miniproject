@@ -10,6 +10,7 @@ import couponRoutes from "./routes/coupon.routes";
 import profileRoutes from "./routes/profile.routes";
 import transactionRoutes from "./routes/transaction.routes";
 import dashboardRoutes from "./routes/dashboard.routes";
+import reviewRoutes from "./routes/review.routes";
 import { startScheduler } from "./services/scheduler.service";
 import "dotenv/config";
 
@@ -35,6 +36,7 @@ app.use("/api/users/me/coupons", couponRoutes);
 app.use("/api/users/me/profile", profileRoutes);
 app.use("/api/transactions", transactionRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api", reviewRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

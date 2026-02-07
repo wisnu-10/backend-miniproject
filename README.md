@@ -1057,6 +1057,218 @@ Get the list of attendees for a specific event.
 
 ---
 
+### Reviews and Ratings (`/api`)
+
+Customers can leave reviews and ratings only after attending an event (completed transaction + event has ended). Ratings and reviews are shown on the event organizer's profile.
+
+#### 1. Create Review (CUSTOMER only)
+
+Leave a review for an event you've attended.
+
+- **Endpoint**: `POST /api/reviews`
+- **Headers**: `Authorization: Bearer <token>` or Cookie
+- **Body**:
+  ```json
+  {
+    "event_id": "event-uuid",
+    "rating": 5,
+    "comment": "Amazing event! The organization was perfect and the venue was great."
+  }
+  ```
+  > **Rating**: 1-5 stars. **Comment**: Minimum 10 characters. **Eligibility**: Must have completed transaction AND event has ended.
+
+- **Response (201)**:
+  ```json
+  {
+    "message": "Review created successfully",
+    "data": {
+      "id": "review-uuid",
+      "rating": 5,
+      "comment": "Amazing event! The organization was perfect...",
+      "created_at": "2026-03-02T10:00:00Z",
+      "user": { "id": "...", "full_name": "John Doe", "profile_picture": "..." },
+      "event": { "id": "...", "name": "Music Festival 2026" }
+    }
+  }
+  ```
+
+- **Error Responses**:
+  - `400`: "You can only review events that you have attended and that have ended"
+  - `400`: "You have already reviewed this event"
+
+#### 2. Update Review (Owner only)
+
+- **Endpoint**: `PUT /api/reviews/:id`
+- **Headers**: `Authorization: Bearer <token>` or Cookie
+- **Body**:
+  ```json
+  {
+    "rating": 4,
+    "comment": "Updated review comment with more details..."
+  }
+  ```
+- **Response (200)**:
+  ```json
+  {
+    "message": "Review updated successfully",
+    "data": { ... }
+  }
+  ```
+
+#### 3. Delete Review (Owner only)
+
+- **Endpoint**: `DELETE /api/reviews/:id`
+- **Headers**: `Authorization: Bearer <token>` or Cookie
+- **Response (200)**:
+  ```json
+  {
+    "message": "Review deleted successfully"
+  }
+  ```
+
+#### 4. Get Event Reviews (Public)
+
+Get all reviews for a specific event with pagination.
+
+- **Endpoint**: `GET /api/events/:eventId/reviews`
+- **Query Parameters**:
+  | Parameter | Type | Description |
+  |-----------|------|-------------|
+  | `page` | number | Page number (default: 1) |
+  | `limit` | number | Items per page (default: 10, max: 50) |
+  | `sort_by` | string | `created_at` or `rating` |
+  | `sort_order` | string | `asc` or `desc` |
+
+- **Response (200)**:
+  ```json
+  {
+    "data": [
+      {
+        "id": "review-uuid",
+        "rating": 5,
+        "comment": "Amazing event!",
+        "created_at": "2026-03-02T10:00:00Z",
+        "user": { "id": "...", "full_name": "John Doe", "profile_picture": "..." }
+      }
+    ],
+    "stats": {
+      "average_rating": 4.5,
+      "total_reviews": 25
+    },
+    "meta": {
+      "page": 1,
+      "limit": 10,
+      "total": 25,
+      "totalPages": 3
+    }
+  }
+  ```
+
+#### 5. Get Event Review Statistics (Public)
+
+Get rating distribution for an event.
+
+- **Endpoint**: `GET /api/events/:eventId/reviews/stats`
+- **Response (200)**:
+  ```json
+  {
+    "data": {
+      "average_rating": 4.5,
+      "total_reviews": 25,
+      "rating_distribution": {
+        "5": 15,
+        "4": 6,
+        "3": 3,
+        "2": 1,
+        "1": 0
+      }
+    }
+  }
+  ```
+
+#### 6. Get Organizer Profile with Reviews (Public)
+
+Get organizer profile with aggregated ratings across all their events.
+
+- **Endpoint**: `GET /api/organizers/:organizerId/reviews`
+- **Response (200)**:
+  ```json
+  {
+    "data": {
+      "organizer": {
+        "id": "organizer-uuid",
+        "full_name": "Event Corp",
+        "profile_picture": "https://...",
+        "email": "organizer@example.com",
+        "created_at": "2025-01-01T00:00:00Z",
+        "total_events": 10
+      },
+      "review_summary": {
+        "average_rating": 4.7,
+        "total_reviews": 150,
+        "rating_distribution": { "5": 100, "4": 30, "3": 15, "2": 3, "1": 2 }
+      },
+      "recent_reviews": [
+        {
+          "id": "...",
+          "rating": 5,
+          "comment": "Great organizer!",
+          "user": { "id": "...", "full_name": "..." },
+          "event": { "id": "...", "name": "..." }
+        }
+      ]
+    }
+  }
+  ```
+
+#### 7. Get My Reviews (CUSTOMER only)
+
+Get the logged-in user's reviews.
+
+- **Endpoint**: `GET /api/users/me/reviews`
+- **Headers**: `Authorization: Bearer <token>` or Cookie
+- **Query Parameters**: `page`, `limit`, `sort_by`, `sort_order`
+- **Response (200)**:
+  ```json
+  {
+    "data": [
+      {
+        "id": "review-uuid",
+        "rating": 5,
+        "comment": "Amazing event!",
+        "created_at": "2026-03-02T10:00:00Z",
+        "event": {
+          "id": "...",
+          "name": "Music Festival 2026",
+          "image": "https://...",
+          "start_date": "2026-03-01T10:00:00Z",
+          "end_date": "2026-03-01T22:00:00Z"
+        }
+      }
+    ],
+    "meta": { "page": 1, "limit": 10, "total": 5, "totalPages": 1 }
+  }
+  ```
+
+#### 8. Check Review Eligibility (CUSTOMER only)
+
+Check if the user can review a specific event.
+
+- **Endpoint**: `GET /api/events/:eventId/reviews/eligibility`
+- **Headers**: `Authorization: Bearer <token>` or Cookie
+- **Response (200)**:
+  ```json
+  {
+    "data": {
+      "can_review": true,
+      "has_attended": true,
+      "has_existing_review": false
+    }
+  }
+  ```
+
+---
+
 ### Email Notifications
 
 The system automatically sends email notifications to customers when:
