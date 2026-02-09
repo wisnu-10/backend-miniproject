@@ -5,6 +5,7 @@ import {
   sendTransactionAcceptedEmail,
   sendTransactionRejectedEmail,
 } from "../config/nodemailer.config";
+import cloudinary from "../config/cloudinary.config";
 
 // Types for service inputs
 export interface TransactionItemInput {
@@ -334,11 +335,11 @@ export const createTransaction = async (data: CreateTransactionInput) => {
   };
 };
 
-// Upload payment proof
+// Upload payment proof to Cloudinary
 export const uploadPaymentProof = async (
   transactionId: string,
   userId: string,
-  paymentProofUrl: string,
+  file: Express.Multer.File,
 ) => {
   const now = new Date();
 
@@ -363,10 +364,28 @@ export const uploadPaymentProof = async (
     throw new Error("Payment deadline has passed. Transaction has expired.");
   }
 
+  // Upload to Cloudinary
+  const uploadResult = await new Promise<{ secure_url: string }>(
+    (resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          folder: "payment_proofs",
+          public_id: `payment_${transactionId}_${Date.now()}`,
+          transformation: [{ quality: "auto", fetch_format: "auto" }],
+        },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result as { secure_url: string });
+        },
+      );
+      uploadStream.end(file.buffer);
+    },
+  );
+
   const updated = await prisma.transaction.update({
     where: { id: transactionId },
     data: {
-      payment_proof: paymentProofUrl,
+      payment_proof: uploadResult.secure_url,
       status: TransactionStatus.WAITING_CONFIRMATION,
     },
     include: {

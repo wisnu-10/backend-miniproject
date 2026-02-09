@@ -76,17 +76,17 @@ export const uploadPaymentProof = async (
         }
 
         const id = getParamAsString(req.params.id);
-        const { payment_proof } = req.body;
 
-        if (!payment_proof) {
-            res.status(400).json({ message: "payment_proof URL is required" });
+        // Check for file upload
+        if (!req.file) {
+            res.status(400).json({ message: "Payment proof file is required" });
             return;
         }
 
         const transaction = await transactionService.uploadPaymentProof(
             id,
             req.user.id,
-            payment_proof
+            req.file
         );
 
         res.status(200).json({

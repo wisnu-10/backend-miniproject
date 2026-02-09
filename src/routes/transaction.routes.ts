@@ -11,6 +11,7 @@ import {
     cancelStaleTransactions,
 } from "../controllers/transaction.controller";
 import { authenticate, authorize } from "../middleware/auth.middleware";
+import { upload } from "../config/multer.config";
 
 const router = Router();
 
@@ -18,7 +19,7 @@ const router = Router();
 router.post("/", authenticate, authorize(["CUSTOMER"]), createTransaction);
 router.get("/me", authenticate, authorize(["CUSTOMER"]), getMyTransactions);
 router.get("/:id", authenticate, authorize(["CUSTOMER", "ORGANIZER"]), getTransactionById);
-router.post("/:id/payment-proof", authenticate, authorize(["CUSTOMER"]), uploadPaymentProof);
+router.post("/:id/payment-proof", authenticate, authorize(["CUSTOMER"]), upload.single("payment_proof"), uploadPaymentProof);
 router.post("/:id/cancel", authenticate, authorize(["CUSTOMER"]), cancelTransaction);
 
 // Organizer routes

@@ -788,16 +788,12 @@ Purchase event tickets with optional discounts.
 
 #### 2. Upload Payment Proof (CUSTOMER only)
 
-Upload proof after payment. Must be done within 2 hours.
+Upload payment proof image after making payment. Must be done within 2 hours. The image is automatically uploaded to Cloudinary.
 
 - **Endpoint**: `POST /api/transactions/:id/payment-proof`
 - **Headers**: `Authorization: Bearer <token>` or Cookie
-- **Body**:
-  ```json
-  {
-    "payment_proof": "https://cloudinary.com/proof.jpg"
-  }
-  ```
+- **Body**: `multipart/form-data` with field `payment_proof` (image file)
+- **Limits**: Max 5MB, JPEG/PNG/GIF/WebP only
 - **Response (200)**:
   ```json
   {
@@ -805,7 +801,7 @@ Upload proof after payment. Must be done within 2 hours.
     "data": {
       "id": "...",
       "status": "WAITING_CONFIRMATION",
-      "payment_proof": "https://cloudinary.com/proof.jpg"
+      "payment_proof": "https://res.cloudinary.com/.../payment_xxx.jpg"
     }
   }
   ```
