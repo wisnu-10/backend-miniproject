@@ -29,50 +29,6 @@ export const createEvent = async (
       ticket_types,
     } = req.body;
 
-    // Validate required fields
-    if (
-      !name ||
-      !description ||
-      !category ||
-      !start_date ||
-      !end_date ||
-      total_seats === undefined ||
-      base_price === undefined
-    ) {
-      res.status(400).json({ message: "Missing required fields" });
-      return;
-    }
-
-    // Validate dates
-    const startDate = new Date(start_date);
-    const endDate = new Date(end_date);
-
-    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-      res.status(400).json({ message: "Invalid date format" });
-      return;
-    }
-
-    if (startDate >= endDate) {
-      res.status(400).json({ message: "End date must be after start date" });
-      return;
-    }
-
-    if (startDate < new Date()) {
-      res.status(400).json({ message: "Start date must be in the future" });
-      return;
-    }
-
-    // Validate numeric fields
-    if (total_seats < 1) {
-      res.status(400).json({ message: "Total seats must be at least 1" });
-      return;
-    }
-
-    if (base_price < 0) {
-      res.status(400).json({ message: "Base price cannot be negative" });
-      return;
-    }
-
     const event = await eventService.createEvent({
       organizer_id: req.user.id,
       name,
@@ -80,8 +36,8 @@ export const createEvent = async (
       category,
       city,
       province,
-      start_date: startDate,
-      end_date: endDate,
+      start_date: new Date(start_date),
+      end_date: new Date(end_date),
       total_seats,
       base_price,
       is_free,

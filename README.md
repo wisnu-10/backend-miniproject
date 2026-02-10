@@ -12,7 +12,7 @@ This is the backend service for the Mini Project V2 application, built with Node
 - **Authentication**: JWT & Cookies (HttpOnly)
 - **File Upload**: Multer + Cloudinary
 - **Email**: Nodemailer
-- **Validation**: Zod (planned/in-progress) or Manual
+- **Validation**: express-validator
 
 ## 🚀 Getting Started
 
@@ -93,6 +93,7 @@ backend/
 │   ├── routes/           # API Route definitions
 │   ├── services/         # Business logic
 │   ├── utils/            # Helper functions (Referral code gen)
+│   ├── validators/       # express-validator middleware
 │   └── server.ts         # Entry point
 └── ...
 ```
@@ -485,6 +486,37 @@ Browse upcoming events with search, filters, sorting, and pagination.
         "price": 500000,
         "quantity": 200,
         "description": "Front row access"
+      }
+    ]
+  }
+  ```
+- **Validation** (handled by `express-validator` middleware):
+
+  | Field | Rule |
+  |-------|------|
+  | `name` | Required, non-empty string, trimmed |
+  | `description` | Required, non-empty string, trimmed |
+  | `category` | Required, non-empty string, trimmed |
+  | `start_date` | Required, valid ISO 8601, must be in the future |
+  | `end_date` | Required, valid ISO 8601, must be after `start_date` |
+  | `total_seats` | Required, integer ≥ 1 |
+  | `base_price` | Required, float ≥ 0 |
+  | `is_free` | Optional, boolean |
+  | `ticket_types` | Optional array |
+  | `ticket_types.*.name` | Required, non-empty string |
+  | `ticket_types.*.price` | Required, float ≥ 0 |
+  | `ticket_types.*.quantity` | Required, integer ≥ 1 |
+
+- **Response (400)** — Validation Error:
+  ```json
+  {
+    "message": "Validation failed",
+    "errors": [
+      {
+        "type": "field",
+        "msg": "Name is required",
+        "path": "name",
+        "location": "body"
       }
     ]
   }
