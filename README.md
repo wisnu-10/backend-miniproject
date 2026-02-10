@@ -118,6 +118,17 @@ Create a new account. Generates a unique referral code automatically.
     "referral_code": "OPTIONAL_REF_CODE"
   }
   ```
+- **Validation**:
+
+  | Field           | Rule                                            |
+  | --------------- | ----------------------------------------------- |
+  | `email`         | Required, valid email format                    |
+  | `password`      | Required, min 6 characters, max 50 characters   |
+  | `full_name`     | Required, min 3 characters, max 100 characters  |
+  | `role`          | Required, must be 'CUSTOMER' or 'ORGANIZER'     |
+  | `phone_number`  | Optional, valid Indonesian mobile number format |
+  | `referral_code` | Optional                                        |
+
 - **Response (201)**:
   ```json
   {
@@ -138,6 +149,13 @@ Authenticate and receive a session cookie.
     "password": "securepassword"
   }
   ```
+- **Validation**:
+
+  | Field      | Rule                         |
+  | ---------- | ---------------------------- |
+  | `email`    | Required, valid email format |
+  | `password` | Required                     |
+
 - **Response (200)**:
   - Sets an `HttpOnly` cookie named `token`.
   ```json
@@ -492,20 +510,20 @@ Browse upcoming events with search, filters, sorting, and pagination.
   ```
 - **Validation** (handled by `express-validator` middleware):
 
-  | Field | Rule |
-  |-------|------|
-  | `name` | Required, non-empty string, trimmed |
-  | `description` | Required, non-empty string, trimmed |
-  | `category` | Required, non-empty string, trimmed |
-  | `start_date` | Required, valid ISO 8601, must be in the future |
-  | `end_date` | Required, valid ISO 8601, must be after `start_date` |
-  | `total_seats` | Required, integer ≥ 1 |
-  | `base_price` | Required, float ≥ 0 |
-  | `is_free` | Optional, boolean |
-  | `ticket_types` | Optional array |
-  | `ticket_types.*.name` | Required, non-empty string |
-  | `ticket_types.*.price` | Required, float ≥ 0 |
-  | `ticket_types.*.quantity` | Required, integer ≥ 1 |
+  | Field                     | Rule                                                 |
+  | ------------------------- | ---------------------------------------------------- |
+  | `name`                    | Required, non-empty string, trimmed                  |
+  | `description`             | Required, non-empty string, trimmed                  |
+  | `category`                | Required, non-empty string, trimmed                  |
+  | `start_date`              | Required, valid ISO 8601, must be in the future      |
+  | `end_date`                | Required, valid ISO 8601, must be after `start_date` |
+  | `total_seats`             | Required, integer ≥ 1                                |
+  | `base_price`              | Required, float ≥ 0                                  |
+  | `is_free`                 | Optional, boolean                                    |
+  | `ticket_types`            | Optional array                                       |
+  | `ticket_types.*.name`     | Required, non-empty string                           |
+  | `ticket_types.*.price`    | Required, float ≥ 0                                  |
+  | `ticket_types.*.quantity` | Required, integer ≥ 1                                |
 
 - **Response (400)** — Validation Error:
   ```json
@@ -1096,6 +1114,7 @@ Leave a review for an event you've attended.
 - **Endpoint**: `POST /api/reviews`
 - **Headers**: `Authorization: Bearer <token>` or Cookie
 - **Body**:
+
   ```json
   {
     "event_id": "event-uuid",
@@ -1103,9 +1122,11 @@ Leave a review for an event you've attended.
     "comment": "Amazing event! The organization was perfect and the venue was great."
   }
   ```
+
   > **Rating**: 1-5 stars. **Comment**: Minimum 10 characters. **Eligibility**: Must have completed transaction AND event has ended.
 
 - **Response (201)**:
+
   ```json
   {
     "message": "Review created successfully",
@@ -1114,7 +1135,11 @@ Leave a review for an event you've attended.
       "rating": 5,
       "comment": "Amazing event! The organization was perfect...",
       "created_at": "2026-03-02T10:00:00Z",
-      "user": { "id": "...", "full_name": "John Doe", "profile_picture": "..." },
+      "user": {
+        "id": "...",
+        "full_name": "John Doe",
+        "profile_picture": "..."
+      },
       "event": { "id": "...", "name": "Music Festival 2026" }
     }
   }
@@ -1176,7 +1201,11 @@ Get all reviews for a specific event with pagination.
         "rating": 5,
         "comment": "Amazing event!",
         "created_at": "2026-03-02T10:00:00Z",
-        "user": { "id": "...", "full_name": "John Doe", "profile_picture": "..." }
+        "user": {
+          "id": "...",
+          "full_name": "John Doe",
+          "profile_picture": "..."
+        }
       }
     ],
     "stats": {
