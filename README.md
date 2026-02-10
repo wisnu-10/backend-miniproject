@@ -715,6 +715,32 @@ Cannot delete if tickets have been sold.
 
   > Note: Provide either `discount_percentage` (0-100) OR `discount_amount`. If `code` is omitted, it will be auto-generated.
 
+- **Validation** (handled by `express-validator` middleware):
+
+  | Field                  | Rule                                                       |
+  | ---------------------- | ---------------------------------------------------------- |
+  | `code`                 | Optional, alphanumeric, 3–20 characters                    |
+  | `discount_percentage`  | Optional, float between 0.01 and 100                       |
+  | `discount_amount`      | Optional, float greater than 0                             |
+  | _(body-level)_         | At least one of `discount_percentage` or `discount_amount` |
+  | `max_usage`            | Required, integer ≥ 1                                      |
+  | `valid_from`           | Required, valid ISO 8601 date                              |
+  | `valid_until`          | Required, valid ISO 8601 date, must be after `valid_from`  |
+
+- **Response (400)** — Validation Error:
+  ```json
+  {
+    "message": "Validation failed",
+    "errors": [
+      {
+        "type": "field",
+        "msg": "Max usage must be at least 1",
+        "path": "max_usage",
+        "location": "body"
+      }
+    ]
+  }
+  ```
 - **Response (201)**:
   ```json
   {
@@ -728,6 +754,16 @@ Cannot delete if tickets have been sold.
 - **Endpoint**: `PUT /api/events/:eventId/promotions/:id`
 - **Headers**: `Authorization: Bearer <token>` or Cookie
 - **Body**: Any fields to update
+- **Validation** (handled by `express-validator` middleware):
+
+  | Field                 | Rule                                                      |
+  | --------------------- | --------------------------------------------------------- |
+  | `code`                | Optional, alphanumeric, 3–20 characters                   |
+  | `discount_percentage` | Optional, float between 0.01 and 100                      |
+  | `discount_amount`     | Optional, float greater than 0                            |
+  | `max_usage`           | Optional, integer ≥ 1                                     |
+  | `valid_from`          | Optional, valid ISO 8601 date                             |
+  | `valid_until`         | Optional, valid ISO 8601 date, must be after `valid_from` |
 - **Response (200)**:
   ```json
   {
@@ -749,37 +785,6 @@ Cannot delete if promotion has been used.
   }
   ```
 
-#### 5. Validate Promotion Code (Public)
-
-- **Endpoint**: `POST /api/promotions/validate`
-- **Body**:
-  ```json
-  {
-    "code": "EARLYBIRD20",
-    "event_id": "event-uuid-here"
-  }
-  ```
-- **Response (200)** - Valid:
-  ```json
-  {
-    "valid": true,
-    "promotion": {
-      "id": "...",
-      "code": "EARLYBIRD20",
-      "discount_percentage": "20.00",
-      "discount_amount": null,
-      "remaining_usage": 75
-    },
-    "event": { "id": "...", "name": "...", "base_price": "150000.00" }
-  }
-  ```
-- **Response (400)** - Invalid:
-  ```json
-  {
-    "valid": false,
-    "message": "Invalid or expired promotion code"
-  }
-  ```
 
 ---
 

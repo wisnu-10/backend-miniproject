@@ -4,14 +4,14 @@ import {
     updatePromotion,
     deletePromotion,
     getPromotionsByEvent,
-    validatePromotion,
 } from "../controllers/promotion.controller";
 import { authenticate, authorize } from "../middleware/auth.middleware";
+import {
+    createPromotionValidator,
+    updatePromotionValidator,
+} from "../validators/promotion.validator";
 
 const router = Router();
-
-// Validation route (public)
-router.post("/promotions/validate", validatePromotion);
 
 // Event-specific promotion routes
 // Public route - get promotions for an event
@@ -22,12 +22,14 @@ router.post(
     "/events/:eventId/promotions",
     authenticate,
     authorize(["ORGANIZER"]),
+    createPromotionValidator,
     createPromotion
 );
 router.put(
     "/events/:eventId/promotions/:id",
     authenticate,
     authorize(["ORGANIZER"]),
+    updatePromotionValidator,
     updatePromotion
 );
 router.delete(

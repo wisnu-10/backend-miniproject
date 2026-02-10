@@ -24,54 +24,8 @@ export const createPromotion = async (
             valid_until,
         } = req.body;
 
-        // Validate required fields
-        if (!max_usage || !valid_from || !valid_until) {
-            res.status(400).json({
-                message: "Missing required fields: max_usage, valid_from, valid_until",
-            });
-            return;
-        }
-
         // Generate code if not provided
         const promoCode = code || promotionService.generatePromoCode();
-
-        // Validate dates
-        const validFromDate = new Date(valid_from);
-        const validUntilDate = new Date(valid_until);
-
-        if (isNaN(validFromDate.getTime()) || isNaN(validUntilDate.getTime())) {
-            res.status(400).json({ message: "Invalid date format" });
-            return;
-        }
-
-        // Validate discount values
-        if (!discount_percentage && !discount_amount) {
-            res.status(400).json({
-                message: "Must provide either discount_percentage or discount_amount",
-            });
-            return;
-        }
-
-        if (discount_percentage !== undefined) {
-            if (discount_percentage <= 0 || discount_percentage > 100) {
-                res.status(400).json({
-                    message: "Discount percentage must be between 0 and 100",
-                });
-                return;
-            }
-        }
-
-        if (discount_amount !== undefined && discount_amount <= 0) {
-            res.status(400).json({
-                message: "Discount amount must be greater than 0",
-            });
-            return;
-        }
-
-        if (max_usage < 1) {
-            res.status(400).json({ message: "Max usage must be at least 1" });
-            return;
-        }
 
         const promotion = await promotionService.createPromotion(req.user.id, {
             event_id: eventId,
@@ -79,8 +33,8 @@ export const createPromotion = async (
             discount_percentage,
             discount_amount,
             max_usage,
-            valid_from: validFromDate,
-            valid_until: validUntilDate,
+            valid_from: new Date(valid_from),
+            valid_until: new Date(valid_until),
         });
 
         res.status(201).json({
@@ -123,31 +77,12 @@ export const updatePromotion = async (
         const id = getParamAsString(req.params.id);
         const updateData = req.body;
 
-        // Validate dates if provided
+        // Convert date strings to Date objects if provided
         if (updateData.valid_from) {
             updateData.valid_from = new Date(updateData.valid_from);
-            if (isNaN(updateData.valid_from.getTime())) {
-                res.status(400).json({ message: "Invalid valid_from date format" });
-                return;
-            }
         }
-
         if (updateData.valid_until) {
             updateData.valid_until = new Date(updateData.valid_until);
-            if (isNaN(updateData.valid_until.getTime())) {
-                res.status(400).json({ message: "Invalid valid_until date format" });
-                return;
-            }
-        }
-
-        // Validate discount percentage if provided
-        if (updateData.discount_percentage !== undefined) {
-            if (updateData.discount_percentage <= 0 || updateData.discount_percentage > 100) {
-                res.status(400).json({
-                    message: "Discount percentage must be between 0 and 100",
-                });
-                return;
-            }
         }
 
         const promotion = await promotionService.updatePromotion(
@@ -247,13 +182,6 @@ export const validatePromotion = async (
 ): Promise<void> => {
     try {
         const { code, event_id } = req.body;
-
-        if (!code || !event_id) {
-            res.status(400).json({
-                message: "Missing required fields: code, event_id",
-            });
-            return;
-        }
 
         const result = await promotionService.validatePromotion(code, event_id);
 
