@@ -1,8 +1,10 @@
 import { v2 as cloudinary } from "cloudinary";
 import "dotenv/config";
 
-// Cloudinary automatically reads CLOUDINARY_URL from environment variables
-// Format: cloudinary://API_KEY:API_SECRET@CLOUD_NAME
-cloudinary.config();
+cloudinary.config({
+    cloud_name: process.env.CLOUD_NAME,
+    api_key: process.env.API_KEY,
+    api_secret: process.env.API_SECRET,
+});
 
 export default cloudinary;
