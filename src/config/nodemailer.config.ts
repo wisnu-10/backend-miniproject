@@ -16,7 +16,7 @@ export const sendPasswordResetEmail = async (
   const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
 
   const mailOptions = {
-    from: `"Mini Project" <${process.env.SMTP_USER}>`,
+    from: `"Mini Project" <${process.env.USER_MAILER}>`,
     to,
     subject: "Password Reset Request",
     html: `
@@ -111,7 +111,7 @@ export const sendTransactionAcceptedEmail = async (
     .join("");
 
   const mailOptions = {
-    from: `"Mini Project Events" <${process.env.SMTP_USER}>`,
+    from: `"Mini Project Events" <${process.env.USER_MAILER}>`,
     to,
     subject: `🎉 Payment Confirmed - ${data.eventName}`,
     html: `
@@ -212,7 +212,7 @@ export const sendTransactionRejectedEmail = async (
       : "";
 
   const mailOptions = {
-    from: `"Mini Project Events" <${process.env.SMTP_USER}>`,
+    from: `"Mini Project Events" <${process.env.USER_MAILER}>`,
     to,
     subject: `Transaction Rejected - ${data.eventName}`,
     html: `
