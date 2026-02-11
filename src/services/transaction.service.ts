@@ -47,6 +47,18 @@ const generateInvoiceNumber = (): string => {
 export const createTransaction = async (data: CreateTransactionInput) => {
   const now = new Date();
 
+  // Mutual exclusivity: only one discount option allowed
+  const hasPromotion = !!data.promotion_code;
+  const hasCoupon = !!data.coupon_code;
+  const hasPoints = data.points_to_use && data.points_to_use > 0;
+
+  const optionsUsed = [hasPromotion, hasCoupon, hasPoints].filter(Boolean).length;
+  if (optionsUsed > 1) {
+    throw new Error(
+      "Only one discount option can be used per transaction: promotion_code, coupon_code, or points_to_use",
+    );
+  }
+
   // Get event details
   const event = await prisma.event.findFirst({
     where: {
