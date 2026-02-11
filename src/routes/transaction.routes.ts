@@ -12,11 +12,15 @@ import {
 } from "../controllers/transaction.controller";
 import { authenticate, authorize } from "../middleware/auth.middleware";
 import { upload } from "../config/multer.config";
+import {
+    createTransactionValidator,
+    updateTransactionStatusValidator,
+} from "../validators/transaction.validator";
 
 const router = Router();
 
 // Customer routes
-router.post("/", authenticate, authorize(["CUSTOMER"]), createTransaction);
+router.post("/", authenticate, authorize(["CUSTOMER"]), createTransactionValidator, createTransaction);
 router.get("/me", authenticate, authorize(["CUSTOMER"]), getMyTransactions);
 router.get("/:id", authenticate, authorize(["CUSTOMER", "ORGANIZER"]), getTransactionById);
 router.post("/:id/payment-proof", authenticate, authorize(["CUSTOMER"]), upload.single("payment_proof"), uploadPaymentProof);
@@ -24,7 +28,7 @@ router.post("/:id/cancel", authenticate, authorize(["CUSTOMER"]), cancelTransact
 
 // Organizer routes
 router.get("/organizer/list", authenticate, authorize(["ORGANIZER"]), getOrganizerTransactions);
-router.put("/:id/status", authenticate, authorize(["ORGANIZER"]), updateTransactionStatus);
+router.put("/:id/status", authenticate, authorize(["ORGANIZER"]), updateTransactionStatusValidator, updateTransactionStatus);
 
 // Admin/Scheduler routes (for manual testing or cron jobs)
 router.post("/admin/expire-unpaid", expireUnpaidTransactions);

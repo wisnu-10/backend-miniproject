@@ -17,22 +17,6 @@ export const createTransaction = async (
 
         const { event_id, items, promotion_code, coupon_code, points_to_use } = req.body;
 
-        // Validate required fields
-        if (!event_id || !items || !Array.isArray(items) || items.length === 0) {
-            res.status(400).json({ message: "event_id and items are required" });
-            return;
-        }
-
-        // Validate items structure
-        for (const item of items) {
-            if (!item.ticket_type_id || !item.quantity || item.quantity < 1) {
-                res.status(400).json({
-                    message: "Each item must have ticket_type_id and quantity (>= 1)",
-                });
-                return;
-            }
-        }
-
         const transaction = await transactionService.createTransaction({
             user_id: req.user.id,
             event_id,
@@ -283,13 +267,6 @@ export const updateTransactionStatus = async (
 
         const id = getParamAsString(req.params.id);
         const { status, rejection_reason } = req.body;
-
-        if (!status || !["DONE", "REJECTED"].includes(status)) {
-            res.status(400).json({
-                message: "status is required and must be either 'DONE' or 'REJECTED'",
-            });
-            return;
-        }
 
         const transaction = await transactionService.updateTransactionStatus(
             id,

@@ -821,6 +821,32 @@ Purchase event tickets with optional discounts.
 
   > All prices are in **IDR**. Points reduce the final amount (1 point = 1 IDR).
 
+- **Validation** (handled by `express-validator` middleware):
+
+  | Field                    | Rule                                  |
+  | ------------------------ | ------------------------------------- |
+  | `event_id`               | Required, non-empty string, trimmed   |
+  | `items`                  | Required, non-empty array             |
+  | `items.*.ticket_type_id` | Required, non-empty string, trimmed   |
+  | `items.*.quantity`       | Required, integer ≥ 1                 |
+  | `promotion_code`         | Optional, trimmed string              |
+  | `coupon_code`            | Optional, trimmed string              |
+  | `points_to_use`          | Optional, integer ≥ 0                 |
+
+- **Response (400)** — Validation Error:
+  ```json
+  {
+    "message": "Validation failed",
+    "errors": [
+      {
+        "type": "field",
+        "msg": "event_id is required",
+        "path": "event_id",
+        "location": "body"
+      }
+    ]
+  }
+  ```
 - **Response (201)**:
   ```json
   {
@@ -937,8 +963,27 @@ List transactions for events you organize.
   }
   ```
 
-  > Status must be `DONE` or `REJECTED`.
+- **Validation** (handled by `express-validator` middleware):
 
+  | Field              | Rule                                                     |
+  | ------------------ | -------------------------------------------------------- |
+  | `status`           | Required, must be `"DONE"` or `"REJECTED"`               |
+  | `rejection_reason` | Optional (required when `status` is `"REJECTED"`), trimmed |
+
+- **Response (400)** — Validation Error:
+  ```json
+  {
+    "message": "Validation failed",
+    "errors": [
+      {
+        "type": "field",
+        "msg": "status must be either 'DONE' or 'REJECTED'",
+        "path": "status",
+        "location": "body"
+      }
+    ]
+  }
+  ```
 - **Response (200)**:
   ```json
   {
