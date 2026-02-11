@@ -21,7 +21,7 @@ export const createTransactionValidator = [
         .isInt({ min: 1 })
         .withMessage("Each item quantity must be an integer >= 1"),
 
-    // Optional fields
+    // Optional discount fields (mutually exclusive)
     body("promotion_code").optional().trim(),
     body("coupon_code").optional().trim(),
 
@@ -29,6 +29,23 @@ export const createTransactionValidator = [
         .optional()
         .isInt({ min: 0 })
         .withMessage("points_to_use must be a non-negative integer"),
+
+    // Mutual exclusivity: only one discount option allowed per transaction
+    body()
+        .custom((value) => {
+            const hasPromotion = !!value.promotion_code;
+            const hasCoupon = !!value.coupon_code;
+            const hasPoints = value.points_to_use && parseInt(value.points_to_use) > 0;
+
+            const optionsUsed = [hasPromotion, hasCoupon, hasPoints].filter(Boolean).length;
+
+            if (optionsUsed > 1) {
+                throw new Error(
+                    "Only one discount option can be used per transaction: promotion_code, coupon_code, or points_to_use"
+                );
+            }
+            return true;
+        }),
 
     handleValidationErrors,
 ];

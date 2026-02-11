@@ -819,6 +819,8 @@ Purchase event tickets with optional discounts.
   }
   ```
 
+  > **Mutual Exclusivity**: Only **one** discount option can be used per transaction — `promotion_code`, `coupon_code`, or `points_to_use`. Providing more than one will return a `400` validation error.
+
   > All prices are in **IDR**. Points reduce the final amount (1 point = 1 IDR).
 
 - **Validation** (handled by `express-validator` middleware):
