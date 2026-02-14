@@ -424,7 +424,7 @@ Browse upcoming events with search, filters, sorting, and pagination.
   | Parameter | Type | Description |
   |-----------|------|-------------|
   | `search` | string | Search in event name and description |
-  | `category` | string | Filter by category |
+  | `category_id` | string (UUID) | Filter by category ID |
   | `city` | string | Filter by city |
   | `province` | string | Filter by province |
   | `is_free` | boolean | Filter free (`true`) or paid (`false`) events |
@@ -460,7 +460,8 @@ Browse upcoming events with search, filters, sorting, and pagination.
       "id": "...",
       "name": "Event Name",
       "description": "...",
-      "category": "Music",
+      "category_id": "category-uuid",
+      "category": { "id": "category-uuid", "name": "Music" },
       "city": "Jakarta",
       "province": "DKI Jakarta",
       "start_date": "2026-03-01T10:00:00Z",
@@ -488,7 +489,7 @@ Browse upcoming events with search, filters, sorting, and pagination.
   {
     "name": "Music Festival 2026",
     "description": "Annual music festival...",
-    "category": "Music",
+    "category_id": "category-uuid",
     "city": "Jakarta",
     "province": "DKI Jakarta",
     "start_date": "2026-03-01T10:00:00Z",
@@ -514,7 +515,7 @@ Browse upcoming events with search, filters, sorting, and pagination.
   | ------------------------- | ---------------------------------------------------- |
   | `name`                    | Required, non-empty string, trimmed                  |
   | `description`             | Required, non-empty string, trimmed                  |
-  | `category`                | Required, non-empty string, trimmed                  |
+  | `category_id`             | Required, valid UUID                                 |
   | `start_date`              | Required, valid ISO 8601, must be in the future      |
   | `end_date`                | Required, valid ISO 8601, must be after `start_date` |
   | `total_seats`             | Required, integer ≥ 1                                |
@@ -579,17 +580,7 @@ Soft deletes the event (sets `deleted_at`).
 - **Headers**: `Authorization: Bearer <token>` or Cookie
 - **Query Parameters**: `page`, `limit`, `sort_by`, `sort_order`
 
-#### 7. Get Categories (Public)
-
-- **Endpoint**: `GET /api/events/meta/categories`
-- **Response (200)**:
-  ```json
-  {
-    "data": ["Music", "Technology", "Sports", ...]
-  }
-  ```
-
-#### 8. Get Locations (Public)
+#### 7. Get Locations (Public)
 
 - **Endpoint**: `GET /api/events/meta/locations`
 - **Response (200)**:
@@ -601,6 +592,94 @@ Soft deletes the event (sets `deleted_at`).
     ]
   }
   ```
+
+---
+
+### Event Categories (`/api/categories`)
+
+#### 1. List Categories (Public)
+
+- **Endpoint**: `GET /api/categories`
+- **Response (200)**:
+  ```json
+  {
+    "data": [
+      {
+        "id": "category-uuid",
+        "name": "Music",
+        "created_at": "2026-02-14T10:00:00Z",
+        "updated_at": "2026-02-14T10:00:00Z"
+      }
+    ]
+  }
+  ```
+
+#### 2. Get Category by ID (Public)
+
+- **Endpoint**: `GET /api/categories/:id`
+- **Response (200)**:
+  ```json
+  {
+    "data": {
+      "id": "category-uuid",
+      "name": "Music",
+      "created_at": "2026-02-14T10:00:00Z",
+      "updated_at": "2026-02-14T10:00:00Z",
+      "_count": { "events": 5 }
+    }
+  }
+  ```
+
+#### 3. Create Category (ORGANIZER only)
+
+- **Endpoint**: `POST /api/categories`
+- **Headers**: `Authorization: Bearer <token>` or Cookie
+- **Body**:
+  ```json
+  {
+    "name": "Music"
+  }
+  ```
+- **Response (201)**:
+  ```json
+  {
+    "message": "Category created successfully",
+    "data": { "id": "...", "name": "Music", ... }
+  }
+  ```
+- **Response (409)**: `"Category with this name already exists"`
+
+#### 4. Update Category (ORGANIZER only)
+
+- **Endpoint**: `PUT /api/categories/:id`
+- **Headers**: `Authorization: Bearer <token>` or Cookie
+- **Body**:
+  ```json
+  {
+    "name": "Updated Name"
+  }
+  ```
+- **Response (200)**:
+  ```json
+  {
+    "message": "Category updated successfully",
+    "data": { ... }
+  }
+  ```
+
+#### 5. Delete Category (ORGANIZER only)
+
+Cannot delete if category is still used by events.
+
+- **Endpoint**: `DELETE /api/categories/:id`
+- **Headers**: `Authorization: Bearer <token>` or Cookie
+- **Response (200)**:
+  ```json
+  {
+    "message": "Category deleted successfully"
+  }
+  ```
+- **Response (400)**: `"Cannot delete category that is still used by events"`
 
 ---
 

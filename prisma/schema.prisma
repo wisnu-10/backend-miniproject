@@ -59,12 +59,24 @@ model User {
   @@map("users")
 }
 
+model EventCategory {
+  id         String   @id @default(uuid())
+  name       String   @unique
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Relations
+  events Event[]
+
+  @@map("event_categories")
+}
+
 model Event {
   id              String    @id @default(uuid())
   organizer_id    String
+  category_id     String
   name            String
   description     String    @db.Text
-  category        String
   city            String?
   province        String?
   start_date      DateTime
@@ -80,6 +92,7 @@ model Event {
 
   // Relations
   organizer    User          @relation(fields: [organizer_id], references: [id], onDelete: Cascade)
+  category     EventCategory @relation(fields: [category_id], references: [id], onDelete: Restrict)
   ticket_types TicketType[]
   promotions   Promotion[]
   transactions Transaction[]
@@ -87,7 +100,7 @@ model Event {
 
   // Indexes
   @@index([organizer_id])
-  @@index([category])
+  @@index([category_id])
   @@index([city])
   @@index([start_date])
   @@index([end_date])

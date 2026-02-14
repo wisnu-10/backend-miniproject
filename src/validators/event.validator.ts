@@ -32,10 +32,12 @@ export const createEventValidator = [
         .isLength({ min: 10, max: 500 })
         .withMessage("Description must be at least 10 characters long"),
 
-    body("category")
+    body("category_id")
         .trim()
         .notEmpty()
-        .withMessage("Category is required"),
+        .withMessage("Category is required")
+        .isUUID()
+        .withMessage("Category ID must be a valid UUID"),
 
     body("start_date")
         .notEmpty()

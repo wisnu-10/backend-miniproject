@@ -3,6 +3,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import authRoutes from "./routes/auth.routes";
 import eventRoutes from "./routes/event.routes";
+import categoryRoutes from "./routes/category.routes";
 import ticketTypeRoutes from "./routes/ticket-type.routes";
 import promotionRoutes from "./routes/promotion.routes";
 import pointRoutes from "./routes/point.routes";
@@ -19,7 +20,7 @@ const PORT = process.env.PORT || 8000;
 
 app.use(
   cors({
-    origin: "http://localhost:3000", // Adjust as needed
+    origin: ["http://localhost:5173"],
     credentials: true,
   }),
 );
@@ -29,6 +30,7 @@ app.use(cookieParser());
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/events", eventRoutes);
+app.use("/api/categories", categoryRoutes);
 app.use("/api/events", ticketTypeRoutes);
 app.use("/api", promotionRoutes);
 app.use("/api/users/me/points", pointRoutes);

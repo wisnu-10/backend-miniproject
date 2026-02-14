@@ -6,7 +6,6 @@ import {
   getEvents,
   getEventById,
   getMyEvents,
-  getCategories,
   getLocations,
   getEventAttendees,
 } from "../controllers/event.controller";
@@ -19,7 +18,6 @@ import {
 const router = Router();
 
 // Public routes
-router.get("/meta/categories", getCategories);
 router.get("/meta/locations", getLocations);
 router.get("/", getEvents);
 router.get("/:id", getEventById);
