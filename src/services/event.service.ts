@@ -6,7 +6,7 @@ export interface CreateEventInput {
   organizer_id: string;
   name: string;
   description: string;
-  category: string;
+  category_id: string;
   city?: string;
   province?: string;
   start_date: Date;
@@ -26,7 +26,7 @@ export interface CreateEventInput {
 export interface UpdateEventInput {
   name?: string;
   description?: string;
-  category?: string;
+  category_id?: string;
   city?: string;
   province?: string;
   start_date?: Date;
@@ -39,7 +39,7 @@ export interface UpdateEventInput {
 
 export interface EventFilters {
   search?: string;
-  category?: string;
+  category_id?: string;
   city?: string;
   province?: string;
   is_free?: boolean;
@@ -71,14 +71,14 @@ export const createEvent = async (data: CreateEventInput) => {
       base_price: new Prisma.Decimal(eventData.base_price),
       ticket_types: ticket_types
         ? {
-            create: ticket_types.map((tt) => ({
-              name: tt.name,
-              description: tt.description,
-              price: new Prisma.Decimal(tt.price),
-              quantity: tt.quantity,
-              available_quantity: tt.quantity,
-            })),
-          }
+          create: ticket_types.map((tt) => ({
+            name: tt.name,
+            description: tt.description,
+            price: new Prisma.Decimal(tt.price),
+            quantity: tt.quantity,
+            available_quantity: tt.quantity,
+          })),
+        }
         : undefined,
     },
     include: {
@@ -209,8 +209,8 @@ export const getEvents = async (
   }
 
   // Category filter
-  if (filters.category) {
-    where.category = { equals: filters.category, mode: "insensitive" };
+  if (filters.category_id) {
+    where.category_id = filters.category_id;
   }
 
   // Location filters
@@ -270,6 +270,12 @@ export const getEvents = async (
             full_name: true,
           },
         },
+        category: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
         _count: {
           select: {
             reviews: true,
@@ -304,6 +310,12 @@ export const getEventById = async (eventId: string) => {
           id: true,
           full_name: true,
           email: true,
+        },
+      },
+      category: {
+        select: {
+          id: true,
+          name: true,
         },
       },
       ticket_types: {
@@ -384,6 +396,12 @@ export const getEventsByOrganizer = async (
       take: limit,
       orderBy: { [sort_by]: sort_order },
       include: {
+        category: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
         ticket_types: true,
         _count: {
           select: {
@@ -407,17 +425,7 @@ export const getEventsByOrganizer = async (
   };
 };
 
-// Get distinct categories
-export const getCategories = async () => {
-  const categories = await prisma.event.findMany({
-    where: { deleted_at: null },
-    select: { category: true },
-    distinct: ["category"],
-    orderBy: { category: "asc" },
-  });
 
-  return categories.map((c) => c.category);
-};
 
 // Get distinct locations (city + province combinations)
 export const getLocations = async () => {

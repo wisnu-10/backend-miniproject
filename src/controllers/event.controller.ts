@@ -17,7 +17,7 @@ export const createEvent = async (
     const {
       name,
       description,
-      category,
+      category_id,
       city,
       province,
       start_date,
@@ -33,7 +33,7 @@ export const createEvent = async (
       organizer_id: req.user.id,
       name,
       description,
-      category,
+      category_id,
       city,
       province,
       start_date: new Date(start_date),
@@ -167,8 +167,8 @@ export const getEvents = async (req: Request, res: Response): Promise<void> => {
       filters.search = req.query.search as string;
     }
 
-    if (req.query.category) {
-      filters.category = req.query.category as string;
+    if (req.query.category_id) {
+      filters.category_id = req.query.category_id as string;
     }
 
     if (req.query.city) {
@@ -272,24 +272,7 @@ export const getMyEvents = async (
   }
 };
 
-// Get categories
-export const getCategories = async (
-  _req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    const categories = await eventService.getCategories();
 
-    res.status(200).json({
-      data: categories,
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      message: "Internal server error",
-      error: error.message,
-    });
-  }
-};
 
 // Get locations
 export const getLocations = async (
