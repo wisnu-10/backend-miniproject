@@ -30,6 +30,9 @@
     "npm": "^11.9.0",
     "pg": "^8.18.0"
   },
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
+  },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
     "@types/cookie-parser": "^1.4.10",
