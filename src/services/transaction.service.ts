@@ -52,7 +52,9 @@ export const createTransaction = async (data: CreateTransactionInput) => {
   const hasCoupon = !!data.coupon_code;
   const hasPoints = data.points_to_use && data.points_to_use > 0;
 
-  const optionsUsed = [hasPromotion, hasCoupon, hasPoints].filter(Boolean).length;
+  const optionsUsed = [hasPromotion, hasCoupon, hasPoints].filter(
+    Boolean,
+  ).length;
   if (optionsUsed > 1) {
     throw new Error(
       "Only one discount option can be used per transaction: promotion_code, coupon_code, or points_to_use",
@@ -720,11 +722,11 @@ export const getUserTransactions = async (
       discount_amount: Number(t.discount_amount),
       final_amount: Number(t.final_amount),
     })),
-    pagination: {
+    meta: {
       page,
       limit,
       total,
-      total_pages: Math.ceil(total / limit),
+      totalPages: Math.ceil(total / limit),
     },
   };
 };
@@ -876,11 +878,11 @@ export const getOrganizerTransactions = async (
       discount_amount: Number(t.discount_amount),
       final_amount: Number(t.final_amount),
     })),
-    pagination: {
+    meta: {
       page,
       limit,
       total,
-      total_pages: Math.ceil(total / limit),
+      totalPages: Math.ceil(total / limit),
     },
   };
 };

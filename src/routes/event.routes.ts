@@ -17,8 +17,18 @@ import {
 
 const router = Router();
 
-// Public routes
+// Public routes - static paths MUST come before /:id
 router.get("/meta/locations", getLocations);
+
+// Organizer dashboard route - MUST come before /:id to avoid being caught
+router.get(
+  "/organizer/my-events",
+  authenticate,
+  authorize(["ORGANIZER"]),
+  getMyEvents,
+);
+
+// Public list and detail
 router.get("/", getEvents);
 router.get("/:id", getEventById);
 
@@ -33,14 +43,6 @@ router.post(
 );
 router.put("/:id", authenticate, authorize(["ORGANIZER"]), updateEvent);
 router.delete("/:id", authenticate, authorize(["ORGANIZER"]), deleteEvent);
-
-// Organizer dashboard route
-router.get(
-  "/organizer/my-events",
-  authenticate,
-  authorize(["ORGANIZER"]),
-  getMyEvents,
-);
 
 // Attendee list for an event (ORGANIZER only)
 router.get(
