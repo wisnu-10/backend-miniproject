@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { AuthRequest } from "../middleware/auth.middleware";
 import * as eventService from "../services/event.service";
 import { getParamAsString } from "../utils/params";
+import cloudinary from "../config/cloudinary.config";
 
 // Create a new event (ORGANIZER only)
 export const createEvent = async (
@@ -25,9 +26,35 @@ export const createEvent = async (
       total_seats,
       base_price,
       is_free,
-      image,
       ticket_types,
     } = req.body;
+
+    // Upload image to Cloudinary if file is provided
+    let imageUrl: string | undefined = undefined;
+    if (req.file) {
+      const uploadResult = await new Promise<{ secure_url: string }>(
+        (resolve, reject) => {
+          const uploadStream = cloudinary.uploader.upload_stream(
+            {
+              folder: "event_images",
+              public_id: `event_${Date.now()}`,
+            },
+            (error, result) => {
+              if (error) reject(error);
+              else resolve(result as { secure_url: string });
+            },
+          );
+          uploadStream.end(req.file!.buffer);
+        },
+      );
+      imageUrl = uploadResult.secure_url;
+    }
+
+    // Parse fields that arrive as strings from multipart/form-data
+    const parsedTotalSeats = typeof total_seats === "string" ? parseInt(total_seats, 10) : total_seats;
+    const parsedBasePrice = typeof base_price === "string" ? parseFloat(base_price) : base_price;
+    const parsedIsFree = typeof is_free === "string" ? is_free === "true" : is_free;
+    const parsedTicketTypes = typeof ticket_types === "string" ? JSON.parse(ticket_types) : ticket_types;
 
     const event = await eventService.createEvent({
       organizer_id: req.user.id,
@@ -38,11 +65,11 @@ export const createEvent = async (
       province,
       start_date: new Date(start_date),
       end_date: new Date(end_date),
-      total_seats,
-      base_price,
-      is_free,
-      image,
-      ticket_types,
+      total_seats: parsedTotalSeats,
+      base_price: parsedBasePrice,
+      is_free: parsedIsFree,
+      image: imageUrl,
+      ticket_types: parsedTicketTypes,
     });
 
     res.status(201).json({

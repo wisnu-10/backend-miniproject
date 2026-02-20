@@ -51,7 +51,7 @@ This is the backend service for the Mini Project V2 application, built with Node
     # Security
     JWT_SECRET="your_super_secret_key_change_this"
 
-    # Cloudinary (for profile picture upload)
+    # Cloudinary (for profile pictures, event images, and payment proofs)
     CLOUDINARY_URL="cloudinary://API_KEY:API_SECRET@CLOUD_NAME"
 
     # Email (for password reset)
@@ -484,44 +484,44 @@ Browse upcoming events with search, filters, sorting, and pagination.
 
 - **Endpoint**: `POST /api/events`
 - **Headers**: `Authorization: Bearer <token>` or Cookie
-- **Body**:
+- **Content-Type**: `multipart/form-data`
+- **Body Fields**:
+  | Field          | Type   | Description                                    |
+  |----------------|--------|------------------------------------------------|
+  | `name`         | string | Event name                                     |
+  | `description`  | string | Event description                              |
+  | `category_id`  | string | Category UUID                                  |
+  | `city`         | string | City name                                      |
+  | `province`     | string | Province name                                  |
+  | `start_date`   | string | ISO 8601 date                                  |
+  | `end_date`     | string | ISO 8601 date                                  |
+  | `total_seats`  | number | Total available seats                          |
+  | `base_price`   | number | Base ticket price                              |
+  | `is_free`      | boolean | Whether the event is free                     |
+  | `image`        | file   | Event image file (JPEG/PNG/WebP, max 2MB). Uploaded to Cloudinary. |
+  | `ticket_types` | string | JSON-stringified array of ticket type objects  |
+
+  **Example `ticket_types` value** (as JSON string):
   ```json
-  {
-    "name": "Music Festival 2026",
-    "description": "Annual music festival...",
-    "category_id": "category-uuid",
-    "city": "Jakarta",
-    "province": "DKI Jakarta",
-    "start_date": "2026-03-01T10:00:00Z",
-    "end_date": "2026-03-01T22:00:00Z",
-    "total_seats": 1000,
-    "base_price": 150000,
-    "is_free": false,
-    "image": "https://example.com/image.jpg",
-    "ticket_types": [
-      { "name": "Regular", "price": 150000, "quantity": 800 },
-      {
-        "name": "VIP",
-        "price": 500000,
-        "quantity": 200,
-        "description": "Front row access"
-      }
-    ]
-  }
+  [
+    { "name": "Regular", "price": 150000, "quantity": 800 },
+    { "name": "VIP", "price": 500000, "quantity": 200, "description": "Front row access" }
+  ]
   ```
 - **Validation** (handled by `express-validator` middleware):
 
   | Field                     | Rule                                                 |
   | ------------------------- | ---------------------------------------------------- |
-  | `name`                    | Required, non-empty string, trimmed                  |
-  | `description`             | Required, non-empty string, trimmed                  |
+  | `name`                    | Required, 5–100 chars, trimmed                       |
+  | `description`             | Required, 10–500 chars, trimmed                      |
   | `category_id`             | Required, valid UUID                                 |
   | `start_date`              | Required, valid ISO 8601, must be in the future      |
   | `end_date`                | Required, valid ISO 8601, must be after `start_date` |
   | `total_seats`             | Required, integer ≥ 1                                |
   | `base_price`              | Required, float ≥ 0                                  |
-  | `is_free`                 | Optional, boolean                                    |
-  | `ticket_types`            | Optional array                                       |
+  | `is_free`                 | Optional, boolean (sent as `"true"`/`"false"` string)|
+  | `image`                   | Optional, image file (JPEG/PNG/WebP, max 2MB)        |
+  | `ticket_types`            | Optional, JSON string parsed to array                |
   | `ticket_types.*.name`     | Required, non-empty string                           |
   | `ticket_types.*.price`    | Required, float ≥ 0                                  |
   | `ticket_types.*.quantity` | Required, integer ≥ 1                                |

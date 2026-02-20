@@ -78,12 +78,28 @@ export const createEventValidator = [
     // Optional fields
     body("city").optional().trim(),
     body("province").optional().trim(),
-    body("is_free").optional().isBoolean().withMessage("is_free must be a boolean"),
-    body("image").optional().trim(),
+    body("is_free")
+        .optional()
+        .customSanitizer((value) => {
+            if (typeof value === "string") return value === "true";
+            return value;
+        })
+        .isBoolean()
+        .withMessage("is_free must be a boolean"),
 
-    // Optional ticket_types array
+    // Parse ticket_types from JSON string (multipart/form-data sends it as a string)
     body("ticket_types")
         .optional()
+        .customSanitizer((value) => {
+            if (typeof value === "string") {
+                try {
+                    return JSON.parse(value);
+                } catch {
+                    return value;
+                }
+            }
+            return value;
+        })
         .isArray()
         .withMessage("ticket_types must be an array"),
 

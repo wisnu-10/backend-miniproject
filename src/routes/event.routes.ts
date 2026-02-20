@@ -14,6 +14,7 @@ import {
   createEventValidator,
   handleValidationErrors,
 } from "../validators/event.validator";
+import { upload } from "../config/multer.config";
 
 const router = Router();
 
@@ -37,6 +38,7 @@ router.post(
   "/",
   authenticate,
   authorize(["ORGANIZER"]),
+  upload.single("image"),
   createEventValidator,
   handleValidationErrors,
   createEvent,
