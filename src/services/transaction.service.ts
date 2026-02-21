@@ -213,7 +213,10 @@ export const createTransaction = async (data: CreateTransactionInput) => {
   // Calculate final amount
   const finalAmount = amountAfterDiscounts.sub(pointsUsed);
 
-  // Set payment deadline to 2 hours from now
+  // Determine if this is a free transaction
+  const isFreeTransaction = finalAmount.lessThanOrEqualTo(0);
+
+  // Set payment deadline to 2 hours from now (not relevant for free transactions)
   const paymentDeadline = new Date(now.getTime() + 2 * 60 * 60 * 1000);
 
   // Create transaction with all related updates in a single transaction
@@ -230,7 +233,9 @@ export const createTransaction = async (data: CreateTransactionInput) => {
         final_amount: finalAmount,
         promotion_id: promotionId,
         coupon_id: couponId,
-        status: TransactionStatus.WAITING_PAYMENT,
+        status: isFreeTransaction
+          ? TransactionStatus.WAITING_CONFIRMATION
+          : TransactionStatus.WAITING_PAYMENT,
         payment_deadline: paymentDeadline,
         items: {
           create: itemsWithDetails.map((item) => ({
