@@ -51,10 +51,16 @@ export const createEvent = async (
     }
 
     // Parse fields that arrive as strings from multipart/form-data
-    const parsedTotalSeats = typeof total_seats === "string" ? parseInt(total_seats, 10) : total_seats;
-    const parsedBasePrice = typeof base_price === "string" ? parseFloat(base_price) : base_price;
-    const parsedIsFree = typeof is_free === "string" ? is_free === "true" : is_free;
-    const parsedTicketTypes = typeof ticket_types === "string" ? JSON.parse(ticket_types) : ticket_types;
+    const parsedTotalSeats =
+      typeof total_seats === "string" ? parseInt(total_seats, 10) : total_seats;
+    const parsedBasePrice =
+      typeof base_price === "string" ? parseFloat(base_price) : base_price;
+    const parsedIsFree =
+      typeof is_free === "string" ? is_free === "true" : is_free;
+    const parsedTicketTypes =
+      typeof ticket_types === "string"
+        ? JSON.parse(ticket_types)
+        : ticket_types;
 
     const event = await eventService.createEvent({
       organizer_id: req.user.id,
@@ -96,7 +102,7 @@ export const updateEvent = async (
     }
 
     const id = getParamAsString(req.params.id);
-    const updateData = req.body;
+    const { ticket_types, ...updateData } = req.body;
 
     // Validate dates if provided
     if (updateData.start_date) {
@@ -298,8 +304,6 @@ export const getMyEvents = async (
     });
   }
 };
-
-
 
 // Get locations
 export const getLocations = async (
