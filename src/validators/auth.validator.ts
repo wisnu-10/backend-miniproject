@@ -51,8 +51,7 @@ export const validateRegister = [
     }),
 
   body("phone_number")
-    .optional()
-    .trim()
+    .optional({ values: "falsy" })
     .isMobilePhone("id-ID")
     .withMessage("Invalid phone number format"),
 
