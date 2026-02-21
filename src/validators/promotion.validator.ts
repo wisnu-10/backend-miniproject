@@ -72,12 +72,12 @@ export const updatePromotionValidator = [
         .withMessage("Promotion code must contain only letters and numbers"),
 
     body("discount_percentage")
-        .optional()
+        .optional({ values: 'falsy' })
         .isFloat({ min: 0.01, max: 100 })
         .withMessage("Discount percentage must be between 0.01 and 100"),
 
     body("discount_amount")
-        .optional()
+        .optional({ values: 'falsy' })
         .isFloat({ gt: 0 })
         .withMessage("Discount amount must be greater than 0"),
 
