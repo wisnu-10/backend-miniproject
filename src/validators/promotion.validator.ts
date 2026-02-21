@@ -4,7 +4,7 @@ import { handleValidationErrors } from "./event.validator";
 // Validation rules for creating a promotion
 export const createPromotionValidator = [
     body("code")
-        .optional()
+        .optional({ values: 'falsy' })
         .trim()
         .isLength({ min: 3, max: 20 })
         .withMessage("Promotion code must be between 3 and 20 characters")

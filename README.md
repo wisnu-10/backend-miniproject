@@ -792,13 +792,13 @@ Cannot delete if tickets have been sold.
   }
   ```
 
-  > Note: Provide either `discount_percentage` (0-100) OR `discount_amount`. If `code` is omitted, it will be auto-generated.
+  > Note: Provide either `discount_percentage` (0-100) OR `discount_amount`. The `code` field is optional — if omitted, left empty (`""`), or set to `null`, a unique code will be auto-generated (e.g. `PROMOA9CM2IWG`).
 
 - **Validation** (handled by `express-validator` middleware):
 
   | Field                  | Rule                                                       |
   | ---------------------- | ---------------------------------------------------------- |
-  | `code`                 | Optional, alphanumeric, 3–20 characters                    |
+  | `code`                 | Optional (falsy values like `""` or `null` trigger auto-generation), alphanumeric, 3–20 chars |
   | `discount_percentage`  | Optional, float between 0.01 and 100                       |
   | `discount_amount`      | Optional, float greater than 0                             |
   | _(body-level)_         | At least one of `discount_percentage` or `discount_amount` |
