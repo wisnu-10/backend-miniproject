@@ -23,7 +23,7 @@ export const createTransaction = async (
             items,
             promotion_code,
             coupon_code,
-            points_to_use: points_to_use ? parseInt(points_to_use) : undefined,
+            points_to_use: points_to_use != null ? Number(points_to_use) : undefined,
         });
 
         res.status(201).json({
