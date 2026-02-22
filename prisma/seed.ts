@@ -13,13 +13,19 @@ const prisma = new PrismaClient({ adapter });
 
 // ─── HELPER FUNCTIONS ────────────────────────────────────────────────────────
 
-function generateReferralCode(name: string, index: number): string {
-  return `${name.replace(/\s/g, "").toUpperCase().slice(0, 6)}${String(index).padStart(3, "0")}`;
+/** Generate an 8-char alphanumeric referral code (matches utils/referral.ts) */
+function generateReferralCode(): string {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let result = "";
+  for (let i = 0; i < 8; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
 }
 
 function generateInvoiceNumber(index: number): string {
-  const date = new Date();
-  const ymd = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, "0")}${String(date.getDate()).padStart(2, "0")}`;
+  const now = new Date();
+  const ymd = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
   return `INV-${ymd}-${String(index).padStart(5, "0")}`;
 }
 
@@ -31,6 +37,10 @@ function randomDate(start: Date, end: Date): Date {
 
 function randomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function pick<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
 }
 
 // ─── STATIC DATA ─────────────────────────────────────────────────────────────
@@ -74,88 +84,205 @@ const PROVINCES: Record<string, string> = {
   Solo: "Jawa Tengah",
 };
 
-const CUSTOMER_NAMES = [
-  "Andi Pratama",
-  "Siti Nurhaliza",
-  "Budi Santoso",
-  "Dewi Lestari",
-  "Rahmat Hidayat",
-  "Putri Ayu",
-  "Fajar Setiawan",
-  "Rina Marlina",
-  "Dimas Arya",
-  "Nisa Amelia",
-  "Galih Putra",
-  "Maya Sari",
-  "Hendra Wijaya",
-  "Laila Fitri",
-  "Taufik Rahman",
-  "Citra Dewi",
-  "Rizky Maulana",
-  "Ayu Wulandari",
-  "Bagus Prasetyo",
-  "Indah Permata",
+const CUSTOMER_DATA = [
+  { name: "Andi Pratama", email: "andi.pratama@gmail.com" },
+  { name: "Siti Nurhaliza", email: "siti.nurhaliza@gmail.com" },
+  { name: "Budi Santoso", email: "budi.santoso@gmail.com" },
+  { name: "Dewi Lestari", email: "dewi.lestari@gmail.com" },
+  { name: "Rahmat Hidayat", email: "rahmat.hidayat@gmail.com" },
+  { name: "Putri Ayu", email: "putri.ayu@gmail.com" },
+  { name: "Fajar Setiawan", email: "fajar.setiawan@gmail.com" },
+  { name: "Rina Marlina", email: "rina.marlina@gmail.com" },
+  { name: "Dimas Arya", email: "dimas.arya@gmail.com" },
+  { name: "Nisa Amelia", email: "nisa.amelia@gmail.com" },
+  { name: "Galih Putra", email: "galih.putra@gmail.com" },
+  { name: "Maya Sari", email: "maya.sari@gmail.com" },
+  { name: "Hendra Wijaya", email: "hendra.wijaya@gmail.com" },
+  { name: "Laila Fitri", email: "laila.fitri@gmail.com" },
+  { name: "Taufik Rahman", email: "taufik.rahman@gmail.com" },
+  { name: "Citra Dewi", email: "citra.dewi@gmail.com" },
+  { name: "Rizky Maulana", email: "rizky.maulana@gmail.com" },
+  { name: "Ayu Wulandari", email: "ayu.wulandari@gmail.com" },
+  { name: "Bagus Prasetyo", email: "bagus.prasetyo@gmail.com" },
+  { name: "Indah Permata", email: "indah.permata@gmail.com" },
 ];
 
-const ORGANIZER_NAMES = [
-  "EventNusantara",
-  "KreasiIndonesia",
-  "GelarBudaya",
-  "SeniPanggung",
-  "FestivalKita",
-  "AcaraHebat",
-  "JelajahEvent",
-  "PestaRakyat",
-  "KarnavalnIndo",
-  "PanggungMeriah",
+const ORGANIZER_DATA = [
+  { name: "EventNusantara", email: "eventnusantara@eventpro.com" },
+  { name: "KreasiIndonesia", email: "kreasiindonesia@eventpro.com" },
+  { name: "GelarBudaya", email: "gelarbudaya@eventpro.com" },
+  { name: "SeniPanggung", email: "senipanggung@eventpro.com" },
+  { name: "FestivalKita", email: "festivalkita@eventpro.com" },
+  { name: "AcaraHebat", email: "acarahebat@eventpro.com" },
+  { name: "JelajahEvent", email: "jelajahevent@eventpro.com" },
+  { name: "PestaRakyat", email: "pestarakyat@eventpro.com" },
+  { name: "KarnavalIndo", email: "karnavalindo@eventpro.com" },
+  { name: "PanggungMeriah", email: "panggungmeriah@eventpro.com" },
 ];
 
-const EVENT_NAMES_BY_CATEGORY: Record<string, string[]> = {
-  Musik: ["Rock in Solo", "Jazz Night Jakarta", "Indie Music Fest"],
+const EVENT_NAMES: { category: string; names: string[] }[] = [
+  {
+    category: "Musik",
+    names: ["Rock in Solo", "Jazz Night Jakarta", "Indie Music Fest"],
+  },
+  {
+    category: "Seminar",
+    names: [
+      "Tech Talk Indonesia",
+      "Startup Summit 2026",
+      "Digital Marketing Seminar",
+    ],
+  },
+  {
+    category: "Workshop",
+    names: [
+      "Workshop Fotografi",
+      "Kelas Barista Nusantara",
+      "Workshop UI/UX Design",
+    ],
+  },
+  {
+    category: "Olahraga",
+    names: [
+      "Marathon Bandung",
+      "Fun Run Surabaya",
+      "Turnamen Badminton Nasional",
+    ],
+  },
+  {
+    category: "Pameran",
+    names: [
+      "Pameran Seni Rupa",
+      "Expo UMKM Nusantara",
+      "Pameran Otomotif 2026",
+    ],
+  },
+  {
+    category: "Festival",
+    names: [
+      "Festival Kuliner Jogja",
+      "Bali Art Festival",
+      "Festival Budaya Makassar",
+    ],
+  },
+  {
+    category: "Konferensi",
+    names: ["DevCon Indonesia", "HR Conference 2026", "FinTech Conference"],
+  },
+  {
+    category: "Webinar",
+    names: [
+      "Webinar AI & Machine Learning",
+      "Webinar Kesehatan Mental",
+      "Webinar Investasi",
+    ],
+  },
+  {
+    category: "Kompetisi",
+    names: [
+      "Hackathon Indonesia",
+      "Lomba Debat Nasional",
+      "E-Sports Championship",
+    ],
+  },
+  {
+    category: "Charity",
+    names: ["Charity Concert", "Fun Walk for Education", "Gala Dinner Amal"],
+  },
+];
+
+// Unique image for every event — uses picsum.photos with seeded IDs for variety
+const EVENT_IMAGES: Record<string, string[]> = {
+  Musik: [
+    "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&h=400&fit=crop",
+    "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&h=400&fit=crop",
+    "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=800&h=400&fit=crop",
+  ],
   Seminar: [
-    "Tech Talk Indonesia",
-    "Startup Summit 2026",
-    "Digital Marketing Seminar",
+    "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&h=400&fit=crop",
+    "https://images.unsplash.com/photo-1475721027785-f74eccf877e2?w=800&h=400&fit=crop",
+    "https://images.unsplash.com/photo-1591115765373-5f9cf1da241d?w=800&h=400&fit=crop",
   ],
   Workshop: [
-    "Workshop Fotografi",
-    "Kelas Barista Nusantara",
-    "Workshop UI/UX Design",
+    "https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&h=400&fit=crop",
+    "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=800&h=400&fit=crop",
+    "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=800&h=400&fit=crop",
   ],
   Olahraga: [
-    "Marathon Bandung",
-    "Fun Run Surabaya",
-    "Turnamen Badminton Nasional",
+    "https://images.unsplash.com/photo-1461896836934-bd45ba8e6e83?w=800&h=400&fit=crop",
+    "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=800&h=400&fit=crop",
+    "https://images.unsplash.com/photo-1530549387789-4c1017266635?w=800&h=400&fit=crop",
   ],
   Pameran: [
-    "Pameran Seni Rupa",
-    "Expo UMKM Nusantara",
-    "Pameran Otomotif 2026",
+    "https://images.unsplash.com/photo-1531058020387-3be344556be6?w=800&h=400&fit=crop",
+    "https://images.unsplash.com/photo-1580060839134-75a5edca2e99?w=800&h=400&fit=crop",
+    "https://images.unsplash.com/photo-1594122230689-45899d9e6f69?w=800&h=400&fit=crop",
   ],
   Festival: [
-    "Festival Kuliner Jogja",
-    "Bali Art Festival",
-    "Festival Budaya Makassar",
+    "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800&h=400&fit=crop",
+    "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&h=400&fit=crop",
+    "https://images.unsplash.com/photo-1472653431158-6364773b2a56?w=800&h=400&fit=crop",
   ],
-  Konferensi: ["DevCon Indonesia", "HR Conference 2026", "FinTech Conference"],
+  Konferensi: [
+    "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=800&h=400&fit=crop",
+    "https://images.unsplash.com/photo-1587825140708-dfaf18c4b4ae?w=800&h=400&fit=crop",
+    "https://images.unsplash.com/photo-1515187029135-18ee286d815b?w=800&h=400&fit=crop",
+  ],
   Webinar: [
-    "Webinar AI & Machine Learning",
-    "Webinar Kesehatan Mental",
-    "Webinar Investasi",
+    "https://images.unsplash.com/photo-1588196749597-9ff075ee6b5b?w=800&h=400&fit=crop",
+    "https://images.unsplash.com/photo-1609234656388-0ff363383899?w=800&h=400&fit=crop",
+    "https://images.unsplash.com/photo-1611532736597-de2d4265fba3?w=800&h=400&fit=crop",
   ],
   Kompetisi: [
-    "Hackathon Indonesia",
-    "Lomba Debat Nasional",
-    "E-Sports Championship",
+    "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=800&h=400&fit=crop",
+    "https://images.unsplash.com/photo-1560272564-c83b66b1ad12?w=800&h=400&fit=crop",
+    "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=800&h=400&fit=crop",
   ],
-  Charity: ["Charity Concert", "Fun Walk for Education", "Gala Dinner Amal"],
+  Charity: [
+    "https://images.unsplash.com/photo-1532629345422-7515f3d16bb6?w=800&h=400&fit=crop",
+    "https://images.unsplash.com/photo-1469571486292-0ba58a3f068b?w=800&h=400&fit=crop",
+    "https://images.unsplash.com/photo-1559027615-cd4628902d4a?w=800&h=400&fit=crop",
+  ],
 };
 
-const TICKET_TYPES = [
-  { name: "Regular", priceMultiplier: 1 },
-  { name: "VIP", priceMultiplier: 2.5 },
-  { name: "VVIP", priceMultiplier: 4 },
-  { name: "Early Bird", priceMultiplier: 0.7 },
+const TICKET_TYPES_TEMPLATE = [
+  { name: "Regular", priceFactor: 1 },
+  { name: "VIP", priceFactor: 2.5 },
+  { name: "VVIP", priceFactor: 4 },
+  { name: "Early Bird", priceFactor: 0.7 },
+];
+
+const PROMO_CODES = [
+  "EARLYBIRD10",
+  "DISKON15",
+  "HEMAT20",
+  "SPESIAL25",
+  "SUPERDEAL30",
+  "PROMO50K",
+  "FLASHSALE",
+  "WEEKEND10",
+  "MEMBER15",
+  "NEWUSER20",
+  "VIP30",
+  "LOYAL25",
+  "BUNDLEDEAL",
+  "LASTCHANCE",
+  "HAPPYHOUR",
+  "SEASONAL10",
+  "RAMADHAN20",
+  "MERDEKA17",
+  "NATAL25",
+  "TAHUNBARU",
+  "LAUNCH10",
+  "COMEBACK15",
+  "REFERRAL20",
+  "BIRTHDAY25",
+  "ANNIVERSARY",
+  "GROUPDEAL",
+  "FAMILY15",
+  "STUDENT10",
+  "TEACHERS",
+  "CORPORATE20",
 ];
 
 const REVIEW_COMMENTS = [
@@ -193,134 +320,176 @@ const REVIEW_COMMENTS = [
 
 // ─── SEED FUNCTIONS ──────────────────────────────────────────────────────────
 
-async function seedUsers(): Promise<string[]> {
-  console.log("🌱 Seeding Users...");
-  const hashedPassword = await bcrypt.hash("Password123!", 10);
-  const userIds: string[] = [];
-
-  // Seed Organizers (10)
-  for (let i = 0; i < ORGANIZER_NAMES.length; i++) {
-    const name = ORGANIZER_NAMES[i];
-    const email = `${name.toLowerCase().replace(/\s/g, "")}@eventpro.com`;
-    const referralCode = generateReferralCode(name, i + 1);
-
-    const user = await prisma.user.upsert({
-      where: { email },
-      update: {},
-      create: {
-        email,
-        password: hashedPassword,
-        full_name: name,
-        phone_number: `08${randomInt(1000000000, 9999999999)}`,
-        role: UserRole.ORGANIZER,
-        referral_code: referralCode,
-      },
-    });
-    userIds.push(user.id);
-  }
-
-  // Seed Customers (20)
-  for (let i = 0; i < CUSTOMER_NAMES.length; i++) {
-    const name = CUSTOMER_NAMES[i];
-    const email = `${name.toLowerCase().replace(/\s/g, ".")}@gmail.com`;
-    const referralCode = generateReferralCode(name, i + 100);
-
-    // Some customers are referred by earlier customers
-    const referredBy =
-      i > 5
-        ? userIds[
-            randomInt(ORGANIZER_NAMES.length, ORGANIZER_NAMES.length + i - 1)
-          ]
-        : undefined;
-
-    const user = await prisma.user.upsert({
-      where: { email },
-      update: {},
-      create: {
-        email,
-        password: hashedPassword,
-        full_name: name,
-        phone_number: `08${randomInt(1000000000, 9999999999)}`,
-        role: UserRole.CUSTOMER,
-        referral_code: referralCode,
-        referred_by: referredBy,
-      },
-    });
-    userIds.push(user.id);
-  }
-
-  console.log(`   ✅ ${userIds.length} users seeded.`);
-  return userIds;
-}
-
-async function seedEventCategories(): Promise<string[]> {
+async function seedEventCategories(): Promise<
+  { id: string; name: string }[]
+> {
   console.log("🌱 Seeding Event Categories...");
-  const categoryIds: string[] = [];
+  const categories: { id: string; name: string }[] = [];
 
   for (const name of EVENT_CATEGORIES) {
-    const category = await prisma.eventCategory.upsert({
+    const cat = await prisma.eventCategory.upsert({
       where: { name },
       update: {},
       create: { name },
     });
-    categoryIds.push(category.id);
+    categories.push({ id: cat.id, name: cat.name });
   }
 
-  console.log(`   ✅ ${categoryIds.length} event categories seeded.`);
-  return categoryIds;
+  console.log(`   ✅ ${categories.length} event categories seeded.`);
+  return categories;
+}
+
+async function seedUsers(): Promise<{
+  organizerIds: string[];
+  customerIds: string[];
+}> {
+  console.log("🌱 Seeding Users...");
+  const hashedPassword = await bcrypt.hash("Password123!", 10);
+  const organizerIds: string[] = [];
+  const customerIds: string[] = [];
+
+  // ── Organizers (10) ──
+  for (const org of ORGANIZER_DATA) {
+    const user = await prisma.user.upsert({
+      where: { email: org.email },
+      update: {},
+      create: {
+        email: org.email,
+        password: hashedPassword,
+        full_name: org.name,
+        phone_number: `08${randomInt(1000000000, 9999999999)}`,
+        role: UserRole.ORGANIZER,
+        referral_code: generateReferralCode(),
+      },
+    });
+    organizerIds.push(user.id);
+  }
+
+  // ── Customers (20) ──
+  // First 6 customers register without referral
+  for (let i = 0; i < CUSTOMER_DATA.length; i++) {
+    const cust = CUSTOMER_DATA[i];
+    const referralCode = generateReferralCode();
+
+    // Customers index 6+ are "referred" by an earlier customer (index 0-5)
+    // This mirrors the auth.services.ts referral flow:
+    //   → referred customer gets a 10% coupon (valid 3 months)
+    //   → referrer gets 10,000 points (valid 3 months)
+    const referredBy =
+      i > 5 ? customerIds[randomInt(0, Math.min(i - 1, 5))] : undefined;
+
+    const user = await prisma.user.upsert({
+      where: { email: cust.email },
+      update: {},
+      create: {
+        email: cust.email,
+        password: hashedPassword,
+        full_name: cust.name,
+        phone_number: `08${randomInt(1000000000, 9999999999)}`,
+        role: UserRole.CUSTOMER,
+        referral_code: referralCode,
+        referred_by: referredBy ?? null,
+      },
+    });
+    customerIds.push(user.id);
+
+    // Simulate referral rewards (same as auth.services.ts register)
+    if (referredBy) {
+      const threeMonthsFromNow = new Date();
+      threeMonthsFromNow.setMonth(threeMonthsFromNow.getMonth() + 3);
+
+      // 10% discount coupon for new user
+      await prisma.coupon.create({
+        data: {
+          user_id: user.id,
+          code: `REF-${generateReferralCode()}`,
+          discount_percentage: 10,
+          valid_from: new Date(),
+          valid_until: threeMonthsFromNow,
+        },
+      });
+
+      // 10,000 points to referrer
+      await prisma.point.create({
+        data: {
+          user_id: referredBy,
+          amount: 10000,
+          remaining_amount: 10000,
+          expires_at: threeMonthsFromNow,
+        },
+      });
+    }
+  }
+
+  console.log(
+    `   ✅ ${organizerIds.length} organizers + ${customerIds.length} customers seeded.`,
+  );
+  return { organizerIds, customerIds };
 }
 
 async function seedEvents(
   organizerIds: string[],
-  categoryIds: string[],
+  categories: { id: string; name: string }[],
 ): Promise<string[]> {
-  console.log("🌱 Seeding Events...");
+  console.log("🌱 Seeding Events (30)...");
   const eventIds: string[] = [];
-  let eventIndex = 0;
+  let idx = 0;
 
-  for (let catIdx = 0; catIdx < EVENT_CATEGORIES.length; catIdx++) {
-    const categoryName = EVENT_CATEGORIES[catIdx];
-    const eventNames = EVENT_NAMES_BY_CATEGORY[categoryName];
+  for (const group of EVENT_NAMES) {
+    const category = categories.find((c) => c.name === group.category)!;
 
-    for (const eventName of eventNames) {
-      const city = CITIES[eventIndex % CITIES.length];
+    for (const eventName of group.names) {
+      const city = CITIES[idx % CITIES.length];
       const totalSeats = randomInt(100, 1000);
+
+      // Charity events are free, others have a price
       const basePrice =
-        categoryName === "Charity" ? 0 : randomInt(50, 500) * 1000;
+        group.category === "Charity" ? 0 : randomInt(50, 500) * 1000;
       const isFree = basePrice === 0;
 
-      const startDate = randomDate(
-        new Date("2026-03-01"),
-        new Date("2026-12-31"),
-      );
-      const endDate = new Date(startDate);
-      endDate.setDate(endDate.getDate() + randomInt(1, 3));
+      // Pick a category-specific image (cycles through 3 per category)
+      const categoryImages = EVENT_IMAGES[group.category] || [];
+      const eventImage =
+        categoryImages.length > 0
+          ? categoryImages[group.names.indexOf(eventName) % categoryImages.length]
+          : null;
 
-      // Use a unique identifier for upsert — combination of name
-      // Since Event doesn't have a unique constraint on name, we search first
-      let event = await prisma.event.findFirst({ where: { name: eventName } });
+      // Mix of past events (for reviews) and future events (for purchases)
+      let startDate: Date;
+      let endDate: Date;
 
-      if (!event) {
-        event = await prisma.event.create({
-          data: {
-            organizer_id: organizerIds[eventIndex % organizerIds.length],
-            category_id: categoryIds[catIdx],
-            name: eventName,
-            description: `${eventName} adalah acara ${categoryName.toLowerCase()} terbesar di ${city}. Bergabunglah bersama ribuan pengunjung untuk menikmati pengalaman luar biasa di ${PROVINCES[city]}. Acara ini menghadirkan berbagai aktivitas menarik dan bintang tamu spesial.`,
-            city,
-            province: PROVINCES[city],
-            start_date: startDate,
-            end_date: endDate,
-            total_seats: totalSeats,
-            available_seats: Math.floor(totalSeats * 0.7), // 70% still available
-            base_price: basePrice,
-            is_free: isFree,
-          },
-        });
+      if (idx < 10) {
+        // First 10 events: already ended (for reviews & DONE transactions)
+        startDate = randomDate(new Date("2026-01-05"), new Date("2026-02-10"));
+        endDate = new Date(startDate);
+        endDate.setDate(endDate.getDate() + randomInt(1, 3));
+      } else {
+        // Remaining 20 events: upcoming (for ticket purchases)
+        startDate = randomDate(new Date("2026-03-15"), new Date("2026-12-31"));
+        endDate = new Date(startDate);
+        endDate.setDate(endDate.getDate() + randomInt(1, 3));
       }
 
+      const event = await prisma.event.create({
+        data: {
+          organizer_id: organizerIds[idx % organizerIds.length],
+          category_id: category.id,
+          name: eventName,
+          description: `${eventName} adalah acara ${group.category.toLowerCase()} terbesar di ${city}. Bergabunglah bersama ribuan pengunjung untuk menikmati pengalaman luar biasa di ${PROVINCES[city]}. Acara ini menghadirkan berbagai aktivitas menarik dan bintang tamu spesial.`,
+          city,
+          province: PROVINCES[city],
+          image: eventImage,
+          start_date: startDate,
+          end_date: endDate,
+          total_seats: totalSeats,
+          available_seats: Math.floor(totalSeats * 0.7),
+          base_price: basePrice,
+          is_free: isFree,
+        },
+      });
+
       eventIds.push(event.id);
-      eventIndex++;
+      idx++;
     }
   }
 
@@ -337,33 +506,24 @@ async function seedTicketTypes(eventIds: string[]): Promise<string[]> {
     if (!event) continue;
 
     // Each event gets 2-3 ticket types
-    const numTicketTypes = randomInt(2, 3);
-    const selectedTypes = TICKET_TYPES.slice(0, numTicketTypes);
+    const numTypes = randomInt(2, 3);
+    const selected = TICKET_TYPES_TEMPLATE.slice(0, numTypes);
 
-    for (const tt of selectedTypes) {
-      const quantity = Math.floor(event.total_seats / numTicketTypes);
-      const price = Number(event.base_price) * tt.priceMultiplier;
+    for (const tmpl of selected) {
+      const quantity = Math.floor(event.total_seats / numTypes);
+      const price = Number(event.base_price) * tmpl.priceFactor;
 
-      // Check if already exists
-      const existing = await prisma.ticketType.findFirst({
-        where: { event_id: eventId, name: tt.name },
+      const tt = await prisma.ticketType.create({
+        data: {
+          event_id: eventId,
+          name: tmpl.name,
+          description: `Tiket ${tmpl.name} untuk ${event.name}`,
+          price,
+          quantity,
+          available_quantity: Math.floor(quantity * 0.7),
+        },
       });
-
-      if (!existing) {
-        const ticketType = await prisma.ticketType.create({
-          data: {
-            event_id: eventId,
-            name: tt.name,
-            description: `Tiket ${tt.name} untuk ${event.name}`,
-            price,
-            quantity,
-            available_quantity: Math.floor(quantity * 0.7),
-          },
-        });
-        ticketTypeIds.push(ticketType.id);
-      } else {
-        ticketTypeIds.push(existing.id);
-      }
+      ticketTypeIds.push(tt.id);
     }
   }
 
@@ -372,68 +532,27 @@ async function seedTicketTypes(eventIds: string[]): Promise<string[]> {
 }
 
 async function seedPromotions(eventIds: string[]): Promise<string[]> {
-  console.log("🌱 Seeding Promotions...");
+  console.log("🌱 Seeding Promotions (30)...");
   const promotionIds: string[] = [];
-
-  const promoCodes = [
-    "EARLYBIRD10",
-    "DISKON15",
-    "HEMAT20",
-    "SPESIAL25",
-    "SUPERDEAL30",
-    "PROMO50K",
-    "FLASHSALE",
-    "WEEKEND10",
-    "MEMBER15",
-    "NEWUSER20",
-    "VIP30",
-    "LOYAL25",
-    "BUNDLEDEAL",
-    "LASTCHANCE",
-    "HAPPYHOUR",
-    "SEASONAL10",
-    "RAMADHAN20",
-    "MERDEKA17",
-    "NATAL25",
-    "TAHUNBARU",
-    "LAUNCH10",
-    "COMEBACK15",
-    "REFERRAL20",
-    "BIRTHDAY25",
-    "ANNIVERSARY",
-    "GROUPDEAL",
-    "FAMILY15",
-    "STUDENT10",
-    "TEACHERS",
-    "CORPORATE20",
-  ];
 
   for (let i = 0; i < 30; i++) {
     const eventId = eventIds[i % eventIds.length];
-    const code = promoCodes[i];
+    const code = PROMO_CODES[i];
     const isPercentage = i % 2 === 0;
 
-    const validFrom = new Date("2026-02-01");
-    const validUntil = new Date("2026-12-31");
-
-    const existing = await prisma.promotion.findUnique({ where: { code } });
-    if (!existing) {
-      const promo = await prisma.promotion.create({
-        data: {
-          event_id: eventId,
-          code,
-          discount_percentage: isPercentage ? randomInt(5, 30) : null,
-          discount_amount: !isPercentage ? randomInt(10, 100) * 1000 : null,
-          max_usage: randomInt(50, 200),
-          current_usage: randomInt(0, 30),
-          valid_from: validFrom,
-          valid_until: validUntil,
-        },
-      });
-      promotionIds.push(promo.id);
-    } else {
-      promotionIds.push(existing.id);
-    }
+    const promo = await prisma.promotion.create({
+      data: {
+        event_id: eventId,
+        code,
+        discount_percentage: isPercentage ? randomInt(5, 30) : null,
+        discount_amount: !isPercentage ? randomInt(10, 100) * 1000 : null,
+        max_usage: randomInt(50, 200),
+        current_usage: randomInt(0, 20),
+        valid_from: new Date("2026-01-01"),
+        valid_until: new Date("2026-12-31"),
+      },
+    });
+    promotionIds.push(promo.id);
   }
 
   console.log(`   ✅ ${promotionIds.length} promotions seeded.`);
@@ -441,7 +560,7 @@ async function seedPromotions(eventIds: string[]): Promise<string[]> {
 }
 
 async function seedCoupons(customerIds: string[]): Promise<string[]> {
-  console.log("🌱 Seeding Coupons...");
+  console.log("🌱 Seeding Coupons (30)...");
   const couponIds: string[] = [];
 
   for (let i = 0; i < 30; i++) {
@@ -449,26 +568,18 @@ async function seedCoupons(customerIds: string[]): Promise<string[]> {
     const code = `COUPON-${String(i + 1).padStart(4, "0")}`;
     const isPercentage = i % 2 === 0;
 
-    const validFrom = new Date("2026-02-01");
-    const validUntil = new Date("2026-08-31");
-
-    const existing = await prisma.coupon.findUnique({ where: { code } });
-    if (!existing) {
-      const coupon = await prisma.coupon.create({
-        data: {
-          user_id: userId,
-          code,
-          discount_percentage: isPercentage ? randomInt(5, 20) : null,
-          discount_amount: !isPercentage ? randomInt(5, 50) * 1000 : null,
-          valid_from: validFrom,
-          valid_until: validUntil,
-          is_used: i < 10, // First 10 coupons are marked as used
-        },
-      });
-      couponIds.push(coupon.id);
-    } else {
-      couponIds.push(existing.id);
-    }
+    const coupon = await prisma.coupon.create({
+      data: {
+        user_id: userId,
+        code,
+        discount_percentage: isPercentage ? randomInt(5, 20) : null,
+        discount_amount: !isPercentage ? randomInt(5, 50) * 1000 : null,
+        valid_from: new Date("2026-01-01"),
+        valid_until: new Date("2026-08-31"),
+        is_used: i < 10, // First 10 are marked as used
+      },
+    });
+    couponIds.push(coupon.id);
   }
 
   console.log(`   ✅ ${couponIds.length} coupons seeded.`);
@@ -476,21 +587,21 @@ async function seedCoupons(customerIds: string[]): Promise<string[]> {
 }
 
 async function seedPoints(customerIds: string[]): Promise<void> {
-  console.log("🌱 Seeding Points...");
+  console.log("🌱 Seeding Points (30)...");
   let count = 0;
 
   for (let i = 0; i < 30; i++) {
     const userId = customerIds[i % customerIds.length];
     const amount = randomInt(1000, 10000);
     const remainingAmount = randomInt(0, amount);
-    const expiresAt = new Date("2026-05-15");
+    const expiresAt = new Date();
     expiresAt.setMonth(expiresAt.getMonth() + randomInt(1, 6));
 
-    // Check if this user already has points seeded (avoid excessive duplicates)
+    // Limit to max 3 point records per user (referral ones already seeded)
     const existingCount = await prisma.point.count({
       where: { user_id: userId },
     });
-    if (existingCount < 2) {
+    if (existingCount < 3) {
       await prisma.point.create({
         data: {
           user_id: userId,
@@ -503,7 +614,7 @@ async function seedPoints(customerIds: string[]): Promise<void> {
     }
   }
 
-  console.log(`   ✅ ${count} points seeded.`);
+  console.log(`   ✅ ${count} extra point records seeded.`);
 }
 
 async function seedTransactions(
@@ -512,10 +623,12 @@ async function seedTransactions(
   promotionIds: string[],
   couponIds: string[],
 ): Promise<string[]> {
-  console.log("🌱 Seeding Transactions...");
+  console.log("🌱 Seeding Transactions (30)...");
   const transactionIds: string[] = [];
 
+  // Weighted statuses: more DONE for dashboard/revenue data
   const statuses: TransactionStatus[] = [
+    TransactionStatus.DONE,
     TransactionStatus.DONE,
     TransactionStatus.DONE,
     TransactionStatus.DONE,
@@ -524,6 +637,7 @@ async function seedTransactions(
     TransactionStatus.REJECTED,
     TransactionStatus.EXPIRED,
     TransactionStatus.CANCELLED,
+    TransactionStatus.DONE,
   ];
 
   for (let i = 0; i < 30; i++) {
@@ -538,45 +652,49 @@ async function seedTransactions(
     const finalAmount = Math.max(totalAmount - discountAmount - pointsUsed, 0);
 
     const paymentDeadline = new Date();
-    paymentDeadline.setDate(paymentDeadline.getDate() + 1);
+    paymentDeadline.setHours(paymentDeadline.getHours() + 2); // 2-hour deadline
 
-    // Optionally link promotion or coupon
-    const promoId =
-      i % 3 === 0 && promotionIds.length > 0
-        ? promotionIds[i % promotionIds.length]
-        : null;
-    const cpnId =
-      i % 5 === 0 && couponIds.length > 0
-        ? couponIds[i % couponIds.length]
-        : null;
+    // Mutual exclusivity: only ONE discount source per transaction
+    // (matches transaction.service.ts logic)
+    let promoId: string | null = null;
+    let cpnId: string | null = null;
 
-    const existing = await prisma.transaction.findUnique({
-      where: { invoice_number: invoiceNumber },
-    });
-    if (!existing) {
-      const transaction = await prisma.transaction.create({
-        data: {
-          user_id: userId,
-          event_id: eventId,
-          invoice_number: invoiceNumber,
-          total_amount: totalAmount,
-          discount_amount: discountAmount,
-          points_used: pointsUsed,
-          final_amount: finalAmount,
-          promotion_id: promoId,
-          coupon_id: cpnId,
-          status,
-          payment_proof:
-            status === TransactionStatus.DONE
-              ? `https://storage.example.com/proofs/proof-${i + 1}.jpg`
-              : null,
-          payment_deadline: paymentDeadline,
-        },
-      });
-      transactionIds.push(transaction.id);
-    } else {
-      transactionIds.push(existing.id);
+    if (i % 4 === 0 && promotionIds.length > 0) {
+      promoId = promotionIds[i % promotionIds.length];
+    } else if (i % 4 === 1 && couponIds.length > 0) {
+      cpnId = couponIds[i % couponIds.length];
     }
+    // i % 4 === 2 → points only (no promo/coupon)
+    // i % 4 === 3 → no discount at all
+
+    // Set created_at depending on event timing for realistic dashboard data
+    const createdAt =
+      i < 10
+        ? randomDate(new Date("2026-01-01"), new Date("2026-02-15"))
+        : randomDate(new Date("2026-02-16"), new Date("2026-02-22"));
+
+    const tx = await prisma.transaction.create({
+      data: {
+        user_id: userId,
+        event_id: eventId,
+        invoice_number: invoiceNumber,
+        total_amount: totalAmount,
+        discount_amount: discountAmount,
+        points_used: i % 4 === 2 ? pointsUsed : 0,
+        final_amount: finalAmount,
+        promotion_id: promoId,
+        coupon_id: cpnId,
+        status,
+        payment_proof:
+          status === TransactionStatus.DONE ||
+            status === TransactionStatus.WAITING_CONFIRMATION
+            ? `https://res.cloudinary.com/demo/image/upload/proof-${i + 1}.jpg`
+            : null,
+        payment_deadline: paymentDeadline,
+        created_at: createdAt,
+      },
+    });
+    transactionIds.push(tx.id);
   }
 
   console.log(`   ✅ ${transactionIds.length} transactions seeded.`);
@@ -596,34 +714,27 @@ async function seedTransactionItems(
 
     for (let j = 0; j < numItems; j++) {
       const ticketTypeId = ticketTypeIds[(i * 2 + j) % ticketTypeIds.length];
-      const quantity = randomInt(1, 4);
 
-      // Get the ticket price
+      // Get price from the ticket type (mirrors transaction.service.ts)
       const ticketType = await prisma.ticketType.findUnique({
         where: { id: ticketTypeId },
       });
       if (!ticketType) continue;
 
+      const quantity = randomInt(1, 4);
       const priceAtBuy = Number(ticketType.price);
       const subtotal = priceAtBuy * quantity;
 
-      // Check existing
-      const existing = await prisma.transactionItem.findFirst({
-        where: { transaction_id: transactionId, ticket_type_id: ticketTypeId },
+      await prisma.transactionItem.create({
+        data: {
+          transaction_id: transactionId,
+          ticket_type_id: ticketTypeId,
+          quantity,
+          price_at_buy: priceAtBuy,
+          subtotal,
+        },
       });
-
-      if (!existing) {
-        await prisma.transactionItem.create({
-          data: {
-            transaction_id: transactionId,
-            ticket_type_id: ticketTypeId,
-            quantity,
-            price_at_buy: priceAtBuy,
-            subtotal,
-          },
-        });
-        count++;
-      }
+      count++;
     }
   }
 
@@ -634,16 +745,20 @@ async function seedReviews(
   customerIds: string[],
   eventIds: string[],
 ): Promise<void> {
-  console.log("🌱 Seeding Reviews...");
+  console.log("🌱 Seeding Reviews (30)...");
   let count = 0;
+
+  // Only past events (first 10) can have reviews
+  // (review.service.ts: user must have attended a finished event)
+  const pastEventIds = eventIds.slice(0, 10);
 
   for (let i = 0; i < 30; i++) {
     const userId = customerIds[i % customerIds.length];
-    const eventId = eventIds[i % eventIds.length];
+    const eventId = pastEventIds[i % pastEventIds.length];
     const rating = randomInt(3, 5); // Mostly positive (3-5)
     const comment = REVIEW_COMMENTS[i % REVIEW_COMMENTS.length];
 
-    // Upsert using the unique constraint [user_id, event_id]
+    // Upsert with unique constraint [user_id, event_id]
     await prisma.review.upsert({
       where: {
         user_id_event_id: { user_id: userId, event_id: eventId },
@@ -667,18 +782,14 @@ async function seedReviews(
 async function main() {
   console.log("🚀 Starting database seeding...\n");
 
-  // 1. Master tables first (no FK dependencies)
-  const categoryIds = await seedEventCategories();
+  // 1. Categories (no FK dependencies)
+  const categories = await seedEventCategories();
 
-  // 2. Users (no FK to other seeded tables)
-  const userIds = await seedUsers();
+  // 2. Users — organizers + customers (referral rewards auto-created)
+  const { organizerIds, customerIds } = await seedUsers();
 
-  // Split users into organizers and customers
-  const organizerIds = userIds.slice(0, ORGANIZER_NAMES.length); // First 10
-  const customerIds = userIds.slice(ORGANIZER_NAMES.length); // Last 20
-
-  // 3. Events (depends on users & categories)
-  const eventIds = await seedEvents(organizerIds, categoryIds);
+  // 3. Events (depends on organizers & categories)
+  const eventIds = await seedEvents(organizerIds, categories);
 
   // 4. Ticket Types (depends on events)
   const ticketTypeIds = await seedTicketTypes(eventIds);
@@ -686,13 +797,14 @@ async function main() {
   // 5. Promotions (depends on events)
   const promotionIds = await seedPromotions(eventIds);
 
-  // 6. Coupons (depends on users/customers)
+  // 6. Coupons (depends on customers)
   const couponIds = await seedCoupons(customerIds);
 
-  // 7. Points (depends on users/customers)
+  // 7. Additional Points (depends on customers; referral points already seeded)
   await seedPoints(customerIds);
 
-  // 8. Transactions (depends on users, events, promotions, coupons)
+  // 8. Transactions (depends on customers, events, promotions, coupons)
+  //    Enforces mutual exclusivity of discounts
   const transactionIds = await seedTransactions(
     customerIds,
     eventIds,
@@ -700,13 +812,24 @@ async function main() {
     couponIds,
   );
 
-  // 9. Transaction Items (depends on transactions, ticket types)
+  // 9. Transaction Items (depends on transactions & ticket types)
   await seedTransactionItems(transactionIds, ticketTypeIds);
 
-  // 10. Reviews (depends on users, events)
+  // 10. Reviews (only on past events, 1 per user/event)
   await seedReviews(customerIds, eventIds);
 
   console.log("\n✅ Database seeding complete!");
+  console.log("   📊 Summary:");
+  console.log(`      • ${categories.length} event categories`);
+  console.log(`      • ${organizerIds.length} organizers`);
+  console.log(`      • ${customerIds.length} customers`);
+  console.log(`      • ${eventIds.length} events (10 past + 20 upcoming)`);
+  console.log(`      • ${ticketTypeIds.length} ticket types`);
+  console.log(`      • ${promotionIds.length} promotions`);
+  console.log(`      • ${couponIds.length} coupons`);
+  console.log(`      • 30 transactions`);
+  console.log(`      • 30 reviews`);
+  console.log(`\n   🔐 Login credentials: Password123!`);
 }
 
 main()
