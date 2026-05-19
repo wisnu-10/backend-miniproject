@@ -1,5 +1,6 @@
 import prisma from "../config/prisma-client.config";
 import { TransactionStatus } from "../generated/prisma/client";
+import { BadRequestError, ConflictError, ForbiddenError, NotFoundError } from "../utils/errors";
 
 // Types for service inputs
 export interface CreateReviewInput {
@@ -79,13 +80,13 @@ export const hasExistingReview = async (
 export const createReview = async (data: CreateReviewInput) => {
     // Validate rating (1-5)
     if (data.rating < 1 || data.rating > 5) {
-        throw new Error("Rating must be between 1 and 5");
+        throw new BadRequestError("Rating must be between 1 and 5");
     }
 
     // Check if user has attended the event
     const hasAttended = await hasAttendedEvent(data.user_id, data.event_id);
     if (!hasAttended) {
-        throw new Error(
+        throw new BadRequestError(
             "You can only review events that you have attended and that have ended",
         );
     }
@@ -93,7 +94,7 @@ export const createReview = async (data: CreateReviewInput) => {
     // Check if user already has a review
     const hasReview = await hasExistingReview(data.user_id, data.event_id);
     if (hasReview) {
-        throw new Error("You have already reviewed this event");
+        throw new ConflictError("You have already reviewed this event");
     }
 
     const review = await prisma.review.create({
@@ -138,12 +139,12 @@ export const updateReview = async (
     });
 
     if (!existingReview) {
-        throw new Error("Review not found or you don't have permission to update");
+        throw new ForbiddenError("Review not found or you don't have permission to update");
     }
 
     // Validate rating if provided
     if (data.rating !== undefined && (data.rating < 1 || data.rating > 5)) {
-        throw new Error("Rating must be between 1 and 5");
+        throw new BadRequestError("Rating must be between 1 and 5");
     }
 
     const review = await prisma.review.update({
@@ -183,7 +184,7 @@ export const deleteReview = async (reviewId: string, userId: string) => {
     });
 
     if (!existingReview) {
-        throw new Error("Review not found or you don't have permission to delete");
+        throw new ForbiddenError("Review not found or you don't have permission to delete");
     }
 
     await prisma.review.delete({
@@ -215,7 +216,7 @@ export const getEventReviews = async (
     });
 
     if (!event) {
-        throw new Error("Event not found");
+        throw new NotFoundError("Event not found");
     }
 
     const [reviews, total] = await Promise.all([
@@ -270,7 +271,7 @@ export const getEventReviewStats = async (eventId: string) => {
     });
 
     if (!event) {
-        throw new Error("Event not found");
+        throw new NotFoundError("Event not found");
     }
 
     // Get rating distribution
@@ -320,7 +321,7 @@ export const getOrganizerReviewProfile = async (organizerId: string) => {
     });
 
     if (!organizer) {
-        throw new Error("Organizer not found");
+        throw new NotFoundError("Organizer not found");
     }
 
     // Get all events by organizer

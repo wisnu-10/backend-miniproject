@@ -1,5 +1,6 @@
 import prisma from "../config/prisma-client.config";
 import { generateReferralCode } from "../utils/referral";
+import { BadRequestError, ForbiddenError, NotFoundError } from "../utils/errors";
 
 /**
  * Get all user's coupons
@@ -39,23 +40,23 @@ export const validateCoupon = async (code: string, userId: string) => {
   });
 
   if (!coupon) {
-    throw new Error("Coupon not found");
+    throw new NotFoundError("Coupon not found");
   }
 
   if (coupon.user_id !== userId) {
-    throw new Error("This coupon does not belong to you");
+    throw new ForbiddenError("This coupon does not belong to you");
   }
 
   if (coupon.is_used) {
-    throw new Error("Coupon has already been used");
+    throw new BadRequestError("Coupon has already been used");
   }
 
   if (coupon.valid_from > now) {
-    throw new Error("Coupon is not yet valid");
+    throw new BadRequestError("Coupon is not yet valid");
   }
 
   if (coupon.valid_until < now) {
-    throw new Error("Coupon has expired");
+    throw new BadRequestError("Coupon has expired");
   }
 
   return {
