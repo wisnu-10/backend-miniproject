@@ -3,6 +3,7 @@ import bcrypt from "bcrypt";
 import crypto from "crypto";
 import cloudinary from "../config/cloudinary.config";
 import { sendPasswordResetEmail } from "../config/nodemailer.config";
+import { BadRequestError, NotFoundError } from "../utils/errors";
 
 const SALT_ROUNDS = 10;
 
@@ -26,7 +27,7 @@ export const getProfile = async (userId: string) => {
   });
 
   if (!user) {
-    throw new Error("User not found");
+    throw new NotFoundError("User not found");
   }
 
   return user;
@@ -116,12 +117,12 @@ export const changePassword = async (
   });
 
   if (!user) {
-    throw new Error("User not found");
+    throw new NotFoundError("User not found");
   }
 
   const isMatch = await bcrypt.compare(oldPassword, user.password);
   if (!isMatch) {
-    throw new Error("Current password is incorrect");
+    throw new BadRequestError("Current password is incorrect");
   }
 
   const hashedPassword = await bcrypt.hash(newPassword, SALT_ROUNDS);
@@ -183,13 +184,13 @@ export const resetPassword = async (token: string, newPassword: string) => {
   });
 
   if (!resetToken) {
-    throw new Error("Invalid or expired reset token");
+    throw new BadRequestError("Invalid or expired reset token");
   }
 
   if (resetToken.expires_at < new Date()) {
     // Clean up expired token
     await prisma.passwordResetToken.delete({ where: { id: resetToken.id } });
-    throw new Error("Reset token has expired");
+    throw new BadRequestError("Reset token has expired");
   }
 
   // Hash new password

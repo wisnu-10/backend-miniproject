@@ -6,6 +6,7 @@ import {
   sendTransactionRejectedEmail,
 } from "../config/nodemailer.config";
 import cloudinary from "../config/cloudinary.config";
+import { BadRequestError, ForbiddenError, NotFoundError } from "../utils/errors";
 
 // Types for service inputs
 export interface TransactionItemInput {
@@ -56,7 +57,7 @@ export const createTransaction = async (data: CreateTransactionInput) => {
     Boolean,
   ).length;
   if (optionsUsed > 1) {
-    throw new Error(
+    throw new BadRequestError(
       "Only one discount option can be used per transaction: promotion_code, coupon_code, or points_to_use",
     );
   }
@@ -70,12 +71,12 @@ export const createTransaction = async (data: CreateTransactionInput) => {
   });
 
   if (!event) {
-    throw new Error("Event not found");
+    throw new NotFoundError("Event not found");
   }
 
   // Validate event hasn't started yet (can't buy tickets for ongoing events)
   if (event.start_date <= now) {
-    throw new Error(
+    throw new BadRequestError(
       "Cannot purchase tickets for events that have already started",
     );
   }
@@ -90,7 +91,7 @@ export const createTransaction = async (data: CreateTransactionInput) => {
   });
 
   if (ticketTypes.length !== ticketTypeIds.length) {
-    throw new Error(
+    throw new NotFoundError(
       "One or more ticket types not found or don't belong to this event",
     );
   }
@@ -109,7 +110,7 @@ export const createTransaction = async (data: CreateTransactionInput) => {
     if (!ticketType) continue;
 
     if (ticketType.available_quantity < item.quantity) {
-      throw new Error(
+      throw new BadRequestError(
         `Not enough tickets available for "${ticketType.name}". Available: ${ticketType.available_quantity}`,
       );
     }
@@ -142,11 +143,11 @@ export const createTransaction = async (data: CreateTransactionInput) => {
     });
 
     if (!promotion) {
-      throw new Error("Invalid or expired promotion code");
+      throw new BadRequestError("Invalid or expired promotion code");
     }
 
     if (promotion.current_usage >= promotion.max_usage) {
-      throw new Error("Promotion code has reached maximum usage");
+      throw new BadRequestError("Promotion code has reached maximum usage");
     }
 
     promotionId = promotion.id;
@@ -174,7 +175,7 @@ export const createTransaction = async (data: CreateTransactionInput) => {
     });
 
     if (!coupon) {
-      throw new Error("Invalid, expired, or already used coupon");
+      throw new BadRequestError("Invalid, expired, or already used coupon");
     }
 
     couponId = coupon.id;
@@ -200,7 +201,7 @@ export const createTransaction = async (data: CreateTransactionInput) => {
     const pointsBalance = await pointService.getPointsBalance(data.user_id);
 
     if (pointsBalance.total_balance < data.points_to_use) {
-      throw new Error(
+      throw new BadRequestError(
         `Insufficient points. Available: ${pointsBalance.total_balance}, Requested: ${data.points_to_use}`,
       );
     }
@@ -370,17 +371,17 @@ export const uploadPaymentProof = async (
   });
 
   if (!transaction) {
-    throw new Error("Transaction not found");
+    throw new NotFoundError("Transaction not found");
   }
 
   if (transaction.status !== TransactionStatus.WAITING_PAYMENT) {
-    throw new Error(
+    throw new BadRequestError(
       `Cannot upload payment proof. Current status: ${transaction.status}`,
     );
   }
 
   if (transaction.payment_deadline < now) {
-    throw new Error("Payment deadline has passed. Transaction has expired.");
+    throw new BadRequestError("Payment deadline has passed. Transaction has expired.");
   }
 
   // Upload to Cloudinary
@@ -435,7 +436,7 @@ export const rollbackTransaction = async (transactionId: string) => {
   });
 
   if (!transaction) {
-    throw new Error("Transaction not found");
+    throw new NotFoundError("Transaction not found");
   }
 
   await prisma.$transaction(async (tx) => {
@@ -515,11 +516,11 @@ export const cancelTransaction = async (
   });
 
   if (!transaction) {
-    throw new Error("Transaction not found");
+    throw new NotFoundError("Transaction not found");
   }
 
   if (transaction.status !== TransactionStatus.WAITING_PAYMENT) {
-    throw new Error(
+    throw new BadRequestError(
       "Can only cancel transactions that are waiting for payment",
     );
   }
@@ -560,15 +561,15 @@ export const updateTransactionStatus = async (
   });
 
   if (!transaction) {
-    throw new Error("Transaction not found");
+    throw new NotFoundError("Transaction not found");
   }
 
   if (transaction.event.organizer_id !== organizerId) {
-    throw new Error("You don't have permission to update this transaction");
+    throw new ForbiddenError("You don't have permission to update this transaction");
   }
 
   if (transaction.status !== TransactionStatus.WAITING_CONFIRMATION) {
-    throw new Error(
+    throw new BadRequestError(
       "Can only accept/reject transactions that are waiting for confirmation",
     );
   }
@@ -784,7 +785,7 @@ export const getTransactionById = async (
   });
 
   if (!transaction) {
-    throw new Error("Transaction not found");
+    throw new NotFoundError("Transaction not found");
   }
 
   const now = new Date();

@@ -1,5 +1,6 @@
 import prisma from "../config/prisma-client.config";
 import { Prisma } from "../generated/prisma/client";
+import { BadRequestError, ForbiddenError, NotFoundError } from "../utils/errors";
 
 // Types for service inputs
 export interface CreateTicketTypeInput {
@@ -22,13 +23,16 @@ const verifyEventOwnership = async (eventId: string, organizerId: string) => {
     const event = await prisma.event.findFirst({
         where: {
             id: eventId,
-            organizer_id: organizerId,
             deleted_at: null,
         },
     });
 
     if (!event) {
-        throw new Error("Event not found or you don't have permission");
+        throw new NotFoundError("Event not found");
+    }
+
+    if (event.organizer_id !== organizerId) {
+        throw new ForbiddenError("You do not have permission to modify this event");
     }
 
     return event;
@@ -69,7 +73,7 @@ export const updateTicketType = async (
     });
 
     if (!existingTicketType) {
-        throw new Error("Ticket type not found");
+        throw new NotFoundError("Ticket type not found");
     }
 
     // Verify ownership
@@ -81,7 +85,7 @@ export const updateTicketType = async (
         const soldQuantity = existingTicketType.quantity - existingTicketType.available_quantity;
         available_quantity = data.quantity - soldQuantity;
         if (available_quantity < 0) {
-            throw new Error("Cannot reduce quantity below already sold tickets");
+            throw new BadRequestError("Cannot reduce quantity below already sold tickets");
         }
     }
 
@@ -111,7 +115,7 @@ export const deleteTicketType = async (
     });
 
     if (!existingTicketType) {
-        throw new Error("Ticket type not found");
+        throw new NotFoundError("Ticket type not found");
     }
 
     // Verify ownership
@@ -120,7 +124,7 @@ export const deleteTicketType = async (
     // Check if tickets have been sold
     const soldQuantity = existingTicketType.quantity - existingTicketType.available_quantity;
     if (soldQuantity > 0) {
-        throw new Error("Cannot delete ticket type with sold tickets");
+        throw new BadRequestError("Cannot delete ticket type with sold tickets");
     }
 
     await prisma.ticketType.delete({
@@ -156,7 +160,7 @@ export const getTicketTypeById = async (ticketTypeId: string) => {
     });
 
     if (!ticketType) {
-        throw new Error("Ticket type not found");
+        throw new NotFoundError("Ticket type not found");
     }
 
     return ticketType;
