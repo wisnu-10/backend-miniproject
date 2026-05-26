@@ -1,5 +1,5 @@
 import prisma from "../config/prisma-client.config";
-import { UserRole } from "../generated/prisma/client";
+import { UserRole } from "@prisma/client";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { generateReferralCode } from "../utils/referral";

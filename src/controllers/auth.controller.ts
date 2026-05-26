@@ -3,7 +3,7 @@ import {
   register as registerService,
   login as loginService,
 } from "../services/auth.services";
-import { UserRole } from "../generated/prisma/client";
+import { UserRole } from "@prisma/client";
 import { BadRequestError } from "../utils/errors";
 
 export const register = async (req: Request, res: Response): Promise<void> => {

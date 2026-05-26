@@ -1,5 +1,5 @@
 import prisma from "../config/prisma-client.config";
-import { TransactionStatus } from "../generated/prisma/client";
+import { TransactionStatus } from "@prisma/client";
 
 // Types for service inputs
 interface TimeFilters {
