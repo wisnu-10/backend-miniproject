@@ -13,7 +13,9 @@ import transactionRoutes from "./routes/transaction.routes";
 import dashboardRoutes from "./routes/dashboard.routes";
 import reviewRoutes from "./routes/review.routes";
 import { startScheduler } from "./services/scheduler.service";
+import { errorHandler } from "./middleware/error.middleware";
 import "dotenv/config";
+
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -39,6 +41,9 @@ app.use("/api/users/me/profile", profileRoutes);
 app.use("/api/transactions", transactionRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api", reviewRoutes);
+
+// Centralized error handling middleware
+app.use(errorHandler);
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

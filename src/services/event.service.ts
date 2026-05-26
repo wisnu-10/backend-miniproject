@@ -1,5 +1,6 @@
 import prisma from "../config/prisma-client.config";
 import { Prisma, TransactionStatus } from "../generated/prisma/client";
+import { BadRequestError, ForbiddenError, NotFoundError } from "../utils/errors";
 
 // Types for service inputs
 export interface CreateEventInput {
@@ -106,13 +107,16 @@ export const updateEvent = async (
   const existingEvent = await prisma.event.findFirst({
     where: {
       id: eventId,
-      organizer_id: organizerId,
       deleted_at: null,
     },
   });
 
   if (!existingEvent) {
-    throw new Error("Event not found or you don't have permission to update");
+    throw new NotFoundError("Event not found");
+  }
+
+  if (existingEvent.organizer_id !== organizerId) {
+    throw new ForbiddenError("You do not have permission to update this event");
   }
 
   // Update is_free if base_price is updated
@@ -127,7 +131,7 @@ export const updateEvent = async (
     const seatsDiff = data.total_seats - existingEvent.total_seats;
     available_seats = existingEvent.available_seats + seatsDiff;
     if (available_seats < 0) {
-      throw new Error("Cannot reduce total seats below already sold tickets");
+      throw new BadRequestError("Cannot reduce total seats below already sold tickets");
     }
   }
 
@@ -163,13 +167,16 @@ export const deleteEvent = async (eventId: string, organizerId: string) => {
   const existingEvent = await prisma.event.findFirst({
     where: {
       id: eventId,
-      organizer_id: organizerId,
       deleted_at: null,
     },
   });
 
   if (!existingEvent) {
-    throw new Error("Event not found or you don't have permission to delete");
+    throw new NotFoundError("Event not found");
+  }
+
+  if (existingEvent.organizer_id !== organizerId) {
+    throw new ForbiddenError("You do not have permission to delete this event");
   }
 
   const event = await prisma.event.update({
@@ -356,7 +363,7 @@ export const getEventById = async (eventId: string) => {
   });
 
   if (!event) {
-    throw new Error("Event not found");
+    throw new NotFoundError("Event not found");
   }
 
   // Calculate average rating
@@ -425,8 +432,6 @@ export const getEventsByOrganizer = async (
   };
 };
 
-
-
 // Get distinct locations (city + province combinations)
 export const getLocations = async () => {
   const locations = await prisma.event.findMany({
@@ -458,15 +463,16 @@ export const getEventAttendees = async (
   const event = await prisma.event.findFirst({
     where: {
       id: eventId,
-      organizer_id: organizerId,
       deleted_at: null,
     },
   });
 
   if (!event) {
-    throw new Error(
-      "Event not found or you don't have permission to view attendees",
-    );
+    throw new NotFoundError("Event not found");
+  }
+
+  if (event.organizer_id !== organizerId) {
+    throw new ForbiddenError("You do not have permission to view attendees");
   }
 
   // Get completed transactions for this event

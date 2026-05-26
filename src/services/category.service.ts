@@ -1,4 +1,5 @@
 import prisma from "../config/prisma-client.config";
+import { BadRequestError, ConflictError, NotFoundError } from "../utils/errors";
 
 // Get all categories
 export const getAllCategories = async () => {
@@ -21,7 +22,7 @@ export const getCategoryById = async (id: string) => {
     });
 
     if (!category) {
-        throw new Error("Category not found");
+        throw new NotFoundError("Category not found");
     }
 
     return category;
@@ -35,7 +36,7 @@ export const createCategory = async (name: string) => {
     });
 
     if (existing) {
-        throw new Error("Category with this name already exists");
+        throw new ConflictError("Category with this name already exists");
     }
 
     const category = await prisma.eventCategory.create({
@@ -52,7 +53,7 @@ export const updateCategory = async (id: string, name: string) => {
     });
 
     if (!existing) {
-        throw new Error("Category not found");
+        throw new NotFoundError("Category not found");
     }
 
     // Check for duplicate name (excluding current)
@@ -64,7 +65,7 @@ export const updateCategory = async (id: string, name: string) => {
     });
 
     if (duplicate) {
-        throw new Error("Category with this name already exists");
+        throw new ConflictError("Category with this name already exists");
     }
 
     const category = await prisma.eventCategory.update({
@@ -87,11 +88,11 @@ export const deleteCategory = async (id: string) => {
     });
 
     if (!category) {
-        throw new Error("Category not found");
+        throw new NotFoundError("Category not found");
     }
 
     if (category._count.events > 0) {
-        throw new Error(
+        throw new BadRequestError(
             "Cannot delete category that is still used by events",
         );
     }

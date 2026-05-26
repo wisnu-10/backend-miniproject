@@ -1,5 +1,6 @@
 import prisma from "../config/prisma-client.config";
 import { Prisma } from "../generated/prisma/client";
+import { BadRequestError, ConflictError, ForbiddenError, NotFoundError } from "../utils/errors";
 
 // Types for service inputs
 export interface CreatePromotionInput {
@@ -26,13 +27,16 @@ const verifyEventOwnership = async (eventId: string, organizerId: string) => {
     const event = await prisma.event.findFirst({
         where: {
             id: eventId,
-            organizer_id: organizerId,
             deleted_at: null,
         },
     });
 
     if (!event) {
-        throw new Error("Event not found or you don't have permission");
+        throw new NotFoundError("Event not found");
+    }
+
+    if (event.organizer_id !== organizerId) {
+        throw new ForbiddenError("You do not have permission to modify this event");
     }
 
     return event;
@@ -59,12 +63,12 @@ export const createPromotion = async (
 
     // Validate discount - must have either percentage or amount
     if (!data.discount_percentage && !data.discount_amount) {
-        throw new Error("Must provide either discount_percentage or discount_amount");
+        throw new BadRequestError("Must provide either discount_percentage or discount_amount");
     }
 
     // Validate dates
     if (data.valid_from >= data.valid_until) {
-        throw new Error("valid_until must be after valid_from");
+        throw new BadRequestError("valid_until must be after valid_from");
     }
 
     // Check for unique code
@@ -73,7 +77,7 @@ export const createPromotion = async (
     });
 
     if (existingCode) {
-        throw new Error("Promotion code already exists");
+        throw new ConflictError("Promotion code already exists");
     }
 
     const promotion = await prisma.promotion.create({
@@ -116,7 +120,7 @@ export const updatePromotion = async (
     });
 
     if (!existingPromotion) {
-        throw new Error("Promotion not found");
+        throw new NotFoundError("Promotion not found");
     }
 
     // Verify ownership
@@ -129,13 +133,13 @@ export const updatePromotion = async (
         });
 
         if (existingCode) {
-            throw new Error("Promotion code already exists");
+            throw new ConflictError("Promotion code already exists");
         }
     }
 
     // Validate max_usage can't be less than current_usage
     if (data.max_usage !== undefined && data.max_usage < existingPromotion.current_usage) {
-        throw new Error("Cannot reduce max_usage below current usage");
+        throw new BadRequestError("Cannot reduce max_usage below current usage");
     }
 
     const promotion = await prisma.promotion.update({
@@ -177,7 +181,7 @@ export const deletePromotion = async (
     });
 
     if (!existingPromotion) {
-        throw new Error("Promotion not found");
+        throw new NotFoundError("Promotion not found");
     }
 
     // Verify ownership
@@ -185,7 +189,7 @@ export const deletePromotion = async (
 
     // Check if promotion has been used
     if (existingPromotion.current_usage > 0) {
-        throw new Error("Cannot delete promotion that has been used");
+        throw new BadRequestError("Cannot delete promotion that has been used");
     }
 
     await prisma.promotion.delete({
@@ -228,11 +232,11 @@ export const validatePromotion = async (code: string, eventId: string) => {
     });
 
     if (!promotion) {
-        throw new Error("Invalid or expired promotion code");
+        throw new BadRequestError("Invalid or expired promotion code");
     }
 
     if (promotion.current_usage >= promotion.max_usage) {
-        throw new Error("Promotion code has reached maximum usage");
+        throw new BadRequestError("Promotion code has reached maximum usage");
     }
 
     return {
@@ -264,7 +268,7 @@ export const getPromotionById = async (promotionId: string) => {
     });
 
     if (!promotion) {
-        throw new Error("Promotion not found");
+        throw new NotFoundError("Promotion not found");
     }
 
     return promotion;

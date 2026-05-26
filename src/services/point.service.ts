@@ -1,4 +1,5 @@
 import prisma from "../config/prisma-client.config";
+import { BadRequestError } from "../utils/errors";
 
 /**
  * Get user's total available (non-expired) points balance
@@ -73,7 +74,7 @@ export const usePoints = async (userId: string, amount: number) => {
   );
 
   if (totalAvailable < amount) {
-    throw new Error(
+    throw new BadRequestError(
       `Insufficient points. Available: ${totalAvailable}, Required: ${amount}`,
     );
   }

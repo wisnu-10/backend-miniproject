@@ -10,7 +10,14 @@ export const createTransactionValidator = [
 
     body("items")
         .isArray({ min: 1 })
-        .withMessage("items must be a non-empty array"),
+        .withMessage("items must be a non-empty array")
+        .custom((items) => {
+            const totalQty = items.reduce((sum: number, item: any) => sum + (Number(item.quantity) || 0), 0);
+            if (totalQty !== 1) {
+                throw new Error("You can only purchase exactly one ticket per transaction");
+            }
+            return true;
+        }),
 
     body("items.*.ticket_type_id")
         .trim()

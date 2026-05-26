@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-// import { UserRole } from "../generated/prisma/client"; // Use this if needed, but string check usually enough if strictly typed in token
+import { UnauthorizedError, ForbiddenError } from "../utils/errors";
 
 const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
 
@@ -17,12 +17,10 @@ export const authenticate = (
   res: Response,
   next: NextFunction,
 ): void => {
-  // Return void explicitly
   const token = req.cookies?.token || req.headers.authorization?.split(" ")[1];
 
   if (!token) {
-    res.status(401).json({ message: "Unauthorized: No token provided" });
-    return;
+    throw new UnauthorizedError("Unauthorized: No token provided");
   }
 
   try {
@@ -34,22 +32,18 @@ export const authenticate = (
     req.user = decoded;
     next();
   } catch (error) {
-    res.status(401).json({ message: "Unauthorized: Invalid token" });
-    return;
+    throw new UnauthorizedError("Unauthorized: Invalid token");
   }
 };
 
 export const authorize = (allowedRoles: string[]) => {
   return (req: AuthRequest, res: Response, next: NextFunction): void => {
-    // Return void
     if (!req.user) {
-      res.status(401).json({ message: "Unauthorized: Not authenticated" });
-      return;
+      throw new UnauthorizedError("Unauthorized: Not authenticated");
     }
 
     if (!allowedRoles.includes(req.user.role)) {
-      res.status(403).json({ message: "Forbidden: Insufficient permissions" });
-      return;
+      throw new ForbiddenError("Forbidden: Insufficient permissions");
     }
 
     next();

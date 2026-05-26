@@ -3,6 +3,7 @@ import { UserRole } from "../generated/prisma/client";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { generateReferralCode } from "../utils/referral";
+import { BadRequestError, ConflictError, UnauthorizedError } from "../utils/errors";
 
 const SALT_ROUNDS = 10;
 const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
@@ -24,7 +25,7 @@ export const register = async (data: {
   });
 
   if (existingUser) {
-    throw new Error("User already exists");
+    throw new ConflictError("User already exists");
   }
 
   // Validate referral code if provided
@@ -35,7 +36,7 @@ export const register = async (data: {
       select: { id: true },
     });
     if (!referrer) {
-      throw new Error("Invalid referral code");
+      throw new BadRequestError("Invalid referral code");
     }
   }
 
@@ -106,21 +107,27 @@ export const register = async (data: {
   return newUser;
 };
 
-export const login = async (data: { email: string; password: string }) => {
-  const { email, password } = data;
+export const login = async (data: { email: string; password: string; role?: UserRole }) => {
+  const { email, password, role } = data;
 
   const user = await prisma.user.findUnique({
     where: { email },
   });
 
   if (!user) {
-    throw new Error("Invalid email or password");
+    throw new UnauthorizedError("Invalid email or password");
   }
 
   const isPasswordValid = await bcrypt.compare(password, user.password);
 
   if (!isPasswordValid) {
-    throw new Error("Invalid email or password");
+    throw new UnauthorizedError("Invalid email or password");
+  }
+
+  if (role && user.role !== role) {
+    throw new UnauthorizedError(
+      `This account is not registered as a ${role.toLowerCase()}`
+    );
   }
 
   // Generate Token
