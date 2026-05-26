@@ -1,5 +1,5 @@
 import express from "express";
-import cors from "cors";
+import { corsConfig } from "./config/cors.config";
 import cookieParser from "cookie-parser";
 import authRoutes from "./routes/auth.routes";
 import eventRoutes from "./routes/event.routes";
@@ -20,12 +20,7 @@ import "dotenv/config";
 const app = express();
 const PORT = process.env.PORT || 8000;
 
-app.use(
-  cors({
-    origin: ["http://localhost:5173"],
-    credentials: true,
-  }),
-);
+app.use(corsConfig);
 app.use(express.json());
 app.use(cookieParser());
 
@@ -45,8 +40,12 @@ app.use("/api", reviewRoutes);
 // Centralized error handling middleware
 app.use(errorHandler);
 
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-  // Start the transaction scheduler for automatic status updates
-  startScheduler();
-});
+export default app;
+
+if (process.env.NODE_ENV !== "production" || !process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+    // Start the transaction scheduler for automatic status updates
+    startScheduler();
+  });
+}
