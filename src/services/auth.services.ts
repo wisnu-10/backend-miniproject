@@ -107,8 +107,8 @@ export const register = async (data: {
   return newUser;
 };
 
-export const login = async (data: { email: string; password: string }) => {
-  const { email, password } = data;
+export const login = async (data: { email: string; password: string; role?: UserRole }) => {
+  const { email, password, role } = data;
 
   const user = await prisma.user.findUnique({
     where: { email },
@@ -122,6 +122,12 @@ export const login = async (data: { email: string; password: string }) => {
 
   if (!isPasswordValid) {
     throw new UnauthorizedError("Invalid email or password");
+  }
+
+  if (role && user.role !== role) {
+    throw new UnauthorizedError(
+      `This account is not registered as a ${role.toLowerCase()}`
+    );
   }
 
   // Generate Token
