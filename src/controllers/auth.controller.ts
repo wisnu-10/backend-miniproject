@@ -48,12 +48,14 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
   const { user, token } = await loginService({ email, password, role });
 
+  const isProduction = process.env.NODE_ENV === "production";
+
   // Set HTTP-only cookie
   res.cookie("token", token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production", // Set to true in production
+    secure: isProduction,
+    sameSite: isProduction ? "none" as const : "lax" as const,
     maxAge: 24 * 60 * 60 * 1000, // 1 day
-    sameSite: "strict",
   });
 
   res.status(200).json({
@@ -69,6 +71,11 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 };
 
 export const logout = async (req: Request, res: Response): Promise<void> => {
-  res.clearCookie("token");
+  const isProduction = process.env.NODE_ENV === "production";
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? "none" as const : "lax" as const,
+  });
   res.status(200).json({ message: "Logout successful" });
 };
