@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { AuthRequest } from "../middleware/auth.middleware";
 import * as transactionService from "../services/transaction.service";
 import { getParamAsString } from "../utils/params";
-import { TransactionStatus } from "../generated/prisma/client";
+import { TransactionStatus } from "@prisma/client";
 import { BadRequestError } from "../utils/errors";
 
 // Create a new transaction (CUSTOMER only)

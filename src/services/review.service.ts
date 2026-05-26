@@ -1,5 +1,5 @@
 import prisma from "../config/prisma-client.config";
-import { TransactionStatus } from "../generated/prisma/client";
+import { TransactionStatus } from "@prisma/client";
 import { BadRequestError, ConflictError, ForbiddenError, NotFoundError } from "../utils/errors";
 
 // Types for service inputs
