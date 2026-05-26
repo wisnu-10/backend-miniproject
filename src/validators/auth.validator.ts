@@ -77,5 +77,11 @@ export const validateLogin = [
 
   body("password").trim().notEmpty().withMessage("Password is required"),
 
+  body("role")
+    .optional()
+    .trim()
+    .isIn(["CUSTOMER", "ORGANIZER"])
+    .withMessage("Role must be either CUSTOMER or ORGANIZER"),
+
   handleValidationErrors,
 ];
