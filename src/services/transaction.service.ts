@@ -48,6 +48,12 @@ const generateInvoiceNumber = (): string => {
 export const createTransaction = async (data: CreateTransactionInput) => {
   const now = new Date();
 
+  // Restrict to exactly 1 ticket per transaction
+  const totalTickets = data.items.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
+  if (totalTickets !== 1) {
+    throw new BadRequestError("You can only purchase exactly one ticket per transaction");
+  }
+
   // Mutual exclusivity: only one discount option allowed
   const hasPromotion = !!data.promotion_code;
   const hasCoupon = !!data.coupon_code;
